@@ -25,7 +25,7 @@ Cara termudah: biarkan skrip yang memasang semua migrasi.
    npm run db:migrate
    ```
 
-Skrip memasang migrasi yang belum ada (urut sesuai nomor file di `supabase/migrations`), mengisi data awal tanpa menimpa data yang sudah ada, dan membuat bucket storage privat untuk rekaman placement. Aman dijalankan berulang setiap ada pembaruan.
+Skrip memasang migrasi yang belum ada (urut sesuai nomor file di `supabase/migrations`), mengisi data awal tanpa menimpa data yang sudah ada, dan membuat bucket storage privat untuk rekaman placement dan bukti bayar. Aman dijalankan berulang setiap ada pembaruan.
 
 Tanpa `SUPABASE_DB_URL`, kamu juga bisa menempel isi setiap file migrasi lalu `supabase/seed.sql` di **SQL Editor** secara berurutan.
 
@@ -74,6 +74,23 @@ npm run dev -- -p 3100
 
 Buka `http://localhost:3100`. Landing page sekarang membaca data dari Supabase (tanda "Mode pratinjau" hilang). Klik **Masuk**, masukkan email Owner dan password sementara dari langkah 5. Kamu akan diminta membuat password pribadi, lalu masuk ke portal Owner.
 
+## 7. Pembayaran dan notifikasi (Fase 2)
+
+1. Masuk sebagai Owner, buka **Pengaturan**, lalu isi rekening tujuan transfer. Rekening ini tampil di halaman pembayaran siswa.
+2. Notifikasi email dan WhatsApp sudah tersambung ke setiap langkah: placement diterima dan terbit, invoice terbit, bukti dikirim, pembayaran diverifikasi atau ditolak, tutor ditugaskan. Selama kunci di bawah kosong, pesan hanya **dicatat** (status "Belum dikirim") dan bisa diperiksa di **Pengaturan** Owner dan beranda Admin.
+3. Saat siap mengirim sungguhan, isi di `.env.local` (dan di Vercel saat deploy):
+
+   | Kunci | Dari mana |
+   | --- | --- |
+   | `RESEND_API_KEY` | [resend.com](https://resend.com) → API Keys, setelah domain diverifikasi |
+   | `EMAIL_FROM` | Alamat pengirim di domain itu, misalnya `Milestone English <halo@domainanda.com>` |
+   | `FONNTE_TOKEN` | [fonnte.com](https://fonnte.com) → Device → token nomor WhatsApp bisnis |
+   | `NEXT_PUBLIC_SITE_URL` | Alamat aplikasi, misalnya `https://domainanda.com` (untuk link di pesan) |
+
+   Tidak ada perubahan kode yang dibutuhkan; pesan berikutnya langsung terkirim.
+
+Aturan pembayaran: kursi dipegang 2x24 jam sejak invoice terbit. Lewat batas, invoice kedaluwarsa dan kursi kembali tersedia. Bila bukti ditolak, siswa mendapat waktu minimal 24 jam lagi untuk mengunggah ulang.
+
 ## Perintah lain
 
 | Perintah | Fungsi |
@@ -82,5 +99,6 @@ Buka `http://localhost:3100`. Landing page sekarang membaca data dari Supabase (
 | `npm run check` | Cek tipe, lint, dan tes sekaligus |
 | `npm run setup:role -- email role "Nama"` | Memberi role staf (owner, admin, lead, tutor) ke akun, atau membuat akun staf dengan password sementara |
 | `npm run e2e:fase1` | Uji otomatis seluruh alur Fase 1 lewat browser (server dev harus berjalan); data uji dihapus otomatis |
+| `npm run e2e:fase2` | Uji otomatis alur Fase 2: batch, pilih kelas, bayar, verifikasi, onboarding, notifikasi; data uji dihapus dan rekening dikembalikan |
 | `npm run db:migrate` | Memasang migrasi baru, seed, dan bucket storage ke Supabase |
 | `npm run seed:generate` | Membuat ulang `supabase/seed.sql` dari `src/data/catalog.ts` |

@@ -13,6 +13,7 @@
     "check": "tsc --noEmit && eslint && vitest run",
     "db:migrate": "node --env-file=.env.local scripts/db-migrate.mjs",
     "e2e:fase1": "node --env-file=.env.local tests/e2e/fase1.mjs",
+    "e2e:fase2": "node --env-file=.env.local tests/e2e/fase2.mjs",
     "setup:role": "node --env-file=.env.local scripts/setup-role.mjs"
   },
   "dependencies": {

@@ -3,6 +3,8 @@ import type { Viewer } from "@/lib/session";
 import { formatDateTime, Notice, PageHeader, Panel, Badge, EmptyState } from "../ui";
 import { journeyStage, JourneyStepper, NextStepCard, PlacementResult } from "../journey";
 import { goalLabel } from "@/lib/placement/levels";
+import { studentEnrollments } from "@/lib/classes";
+import { ClassStep, currentEnrollment } from "./classes";
 
 const STATUS_LABEL: Record<string, { label: string; tone: "orange" | "green" | "amber" | "slate" }> = {
   in_progress: { label: "Belum dikirim", tone: "amber" },
@@ -31,18 +33,21 @@ export async function StudentHome({ viewer, error }: { viewer: Viewer; error?: s
 
   const published = attempt?.status === "published" ? attempt : null;
   const interested = programs.find((p) => p.id === student.interested_program_id);
+  const current = currentEnrollment(await studentEnrollments([student.id]));
+  const stage = journeyStage(attempt, current);
+  const classStep = published || current ? <ClassStep learner={{ student, attempt }} enrollment={current} base="/portal/student" /> : undefined;
 
   return (
     <div className="fade-in mx-auto max-w-5xl space-y-6">
       <PageHeader title={`Halo, ${firstName}!`} subtitle={`Tujuan belajar: ${goalLabel(student.learning_goal) || "-"}${interested ? ` · Minat: ${interested.name}` : ""}`} />
       {error && <Notice tone="red">{error}</Notice>}
       <Panel>
-        <JourneyStepper stage={journeyStage(attempt)} />
+        <JourneyStepper stage={stage} />
       </Panel>
       <Panel>
-        <NextStepCard attempt={attempt} studentId={student.id} returnTo="/portal/student" />
+        <NextStepCard attempt={attempt} studentId={student.id} returnTo="/portal/student" classStep={classStep} />
       </Panel>
-      {published && (
+      {published && stage === 2 && (
         <Panel title="Hasil placement test">
           <PlacementResult attempt={published} programs={programs} />
         </Panel>

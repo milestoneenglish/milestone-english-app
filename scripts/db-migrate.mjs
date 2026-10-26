@@ -51,7 +51,7 @@ try {
   await sql.end();
 }
 
-// Bucket storage privat untuk rekaman placement dan media soal.
+// Bucket storage privat untuk rekaman placement, media soal, dan bukti bayar.
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 if (url && serviceKey) {
@@ -59,6 +59,7 @@ if (url && serviceKey) {
   const buckets = [
     { name: "placement-answers", options: { public: false, fileSizeLimit: "10MB", allowedMimeTypes: ["audio/webm", "audio/ogg", "audio/mp4", "audio/mpeg", "audio/wav"] } },
     { name: "placement-media", options: { public: false, fileSizeLimit: "20MB", allowedMimeTypes: ["audio/mpeg", "audio/mp4", "audio/wav", "audio/webm", "audio/ogg"] } },
+    { name: "payment-proofs", options: { public: false, fileSizeLimit: "5MB", allowedMimeTypes: ["image/jpeg", "image/png", "image/webp", "application/pdf"] } },
   ];
   const { data: existing } = await admin.storage.listBuckets();
   for (const b of buckets) {

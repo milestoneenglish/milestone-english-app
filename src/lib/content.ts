@@ -16,8 +16,11 @@ export type Hero = {
   subtitle: string;
 };
 
+export type OpenBatch = { code: string; program_slug: string; start_date: string; schedule_label: string; seats_left: number };
+
 export type LandingContent = {
   programs: Program[];
+  batches: OpenBatch[];
   faqs: Faq[];
   testimonials: Testimonial[];
   contact: Contact;
@@ -32,6 +35,7 @@ export const getLandingContent = cache(async (): Promise<LandingContent> => {
   if (!isSupabaseConfigured) {
     return {
       programs: SEED_PROGRAMS,
+      batches: [],
       faqs: SEED_FAQS,
       testimonials: [],
       contact: SEED_SETTINGS.contact as Contact,
@@ -42,11 +46,12 @@ export const getLandingContent = cache(async (): Promise<LandingContent> => {
 
   // Konten publik dibaca sebagai pengunjung (tanpa cookie), sehingga halaman bisa di-cache.
   const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: false } });
-  const [programs, faqs, testimonials, settings] = await Promise.all([
+  const [programs, faqs, testimonials, settings, batches] = await Promise.all([
     supabase.from("programs").select(PROGRAM_COLUMNS).eq("status", "active").order("sort_order"),
     supabase.from("faqs").select("question, answer").eq("published", true).order("sort_order"),
     supabase.from("testimonials").select("name, program_label, quote").eq("published", true).order("sort_order").limit(3),
     supabase.from("site_settings").select("key, value").in("key", ["contact", "hero"]),
+    supabase.rpc("open_batches"),
   ]);
 
   const error = programs.error ?? faqs.error ?? testimonials.error ?? settings.error;
@@ -56,6 +61,8 @@ export const getLandingContent = cache(async (): Promise<LandingContent> => {
 
   return {
     programs: (programs.data ?? []) as Program[],
+    // Jadwal batch bersifat pelengkap: jika gagal dimuat, katalog tetap tampil.
+    batches: batches.error ? [] : ((batches.data ?? []) as OpenBatch[]),
     faqs: faqs.data ?? [],
     testimonials: testimonials.data ?? [],
     contact: { ...(SEED_SETTINGS.contact as Contact), ...(byKey.contact ?? {}) },

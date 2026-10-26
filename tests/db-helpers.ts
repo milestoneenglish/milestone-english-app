@@ -32,6 +32,7 @@ revoke update on public.students from authenticated;
 grant update (full_name, birth_year, learning_goal, interested_program_id) on public.students to authenticated;
 revoke update on public.guardian_links from authenticated;
 grant update (status, decided_by, decided_at) on public.guardian_links to authenticated;
+revoke insert, update, delete on public.enrollments, public.invoices, public.payment_proofs, public.notifications from authenticated, anon;
 `;
 
 export async function createTestDb() {

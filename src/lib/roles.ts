@@ -52,6 +52,7 @@ export const ROLE_MENU: Record<Role, MenuItem[]> = {
   guardian: [
     { slug: "", label: "Beranda", icon: "home", phase: 1 },
     { slug: "anak", label: "Anak Saya", icon: "users", phase: 1 },
+    { slug: "program", label: "Program Anak", icon: "book", phase: 2 },
     { slug: "jadwal", label: "Jadwal & Kehadiran", icon: "calendar", phase: 3 },
     { slug: "progres", label: "Progres & Laporan", icon: "report", phase: 4 },
     { slug: "pembayaran", label: "Pembayaran", icon: "wallet", phase: 2 },
@@ -89,6 +90,6 @@ export const ROLE_MENU: Record<Role, MenuItem[]> = {
     { slug: "program", label: "Program & Harga", icon: "book", phase: 5 },
     { slug: "keuangan", label: "Keuangan", icon: "wallet", phase: 5 },
     { slug: "audit", label: "Audit Log", icon: "shield", phase: 5 },
-    { slug: "pengaturan", label: "Pengaturan", icon: "settings", phase: 5 },
+    { slug: "pengaturan", label: "Pengaturan", icon: "settings", phase: 2 },
   ],
 };

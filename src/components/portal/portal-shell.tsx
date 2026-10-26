@@ -6,11 +6,11 @@ import { useState } from "react";
 import { signOut } from "@/app/portal/actions";
 import { Icon } from "@/components/icons";
 import { Logo } from "@/components/logo";
-import { ROLE_LABEL, ROLE_MENU, type Role } from "@/lib/roles";
+import { ROLE_LABEL, type MenuItem, type Role } from "@/lib/roles";
 
-type Props = { role: Role; roles: Role[]; name: string; email: string; children: React.ReactNode };
+type Props = { role: Role; roles: Role[]; menu: MenuItem[]; name: string; email: string; children: React.ReactNode };
 
-function Sidebar({ role, roles, onNavigate }: { role: Role; roles: Role[]; onNavigate?: () => void }) {
+function Sidebar({ role, roles, menu, onNavigate }: { role: Role; roles: Role[]; menu: MenuItem[]; onNavigate?: () => void }) {
   const pathname = usePathname();
   const base = `/portal/${role}`;
 
@@ -44,7 +44,7 @@ function Sidebar({ role, roles, onNavigate }: { role: Role; roles: Role[]; onNav
       )}
 
       <nav className="flex-1 space-y-1.5 overflow-y-auto pr-1" aria-label={`Menu ${ROLE_LABEL[role]}`}>
-        {ROLE_MENU[role].map((item) => {
+        {menu.map((item) => {
           const href = item.slug ? `${base}/${item.slug}` : base;
           const active = pathname === href;
           return (
@@ -75,10 +75,10 @@ function Sidebar({ role, roles, onNavigate }: { role: Role; roles: Role[]; onNav
   );
 }
 
-export function PortalShell({ role, roles, name, email, children }: Props) {
+export function PortalShell({ role, roles, menu, name, email, children }: Props) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
-  const current = ROLE_MENU[role].find((m) => pathname === (m.slug ? `/portal/${role}/${m.slug}` : `/portal/${role}`));
+  const current = menu.find((m) => pathname === (m.slug ? `/portal/${role}/${m.slug}` : `/portal/${role}`));
   const initials = name
     .split(/\s+/)
     .filter(Boolean)
@@ -89,7 +89,7 @@ export function PortalShell({ role, roles, name, email, children }: Props) {
   return (
     <div className="flex h-screen overflow-hidden bg-navy-dark text-slate-100">
       <aside className="hidden h-full w-64 shrink-0 border-r border-slate-800/80 bg-navy-side p-5 lg:block xl:w-72">
-        <Sidebar role={role} roles={roles} />
+        <Sidebar role={role} roles={roles} menu={menu} />
       </aside>
 
       {open && (
@@ -99,7 +99,7 @@ export function PortalShell({ role, roles, name, email, children }: Props) {
             <button onClick={() => setOpen(false)} className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-slate-800 text-slate-300" aria-label="Tutup menu">
               <Icon name="close" className="h-4 w-4" />
             </button>
-            <Sidebar role={role} roles={roles} onNavigate={() => setOpen(false)} />
+            <Sidebar role={role} roles={roles} menu={menu} onNavigate={() => setOpen(false)} />
           </div>
         </div>
       )}

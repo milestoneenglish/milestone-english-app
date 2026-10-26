@@ -1,9 +1,11 @@
+import { studentEnrollments } from "@/lib/classes";
 import { activePrograms, guardianChildren } from "@/lib/students";
 import { goalLabel } from "@/lib/placement/levels";
 import type { Viewer } from "@/lib/session";
 import { journeyStage, JourneyStepper, NextStepCard, PlacementResult } from "../journey";
 import { Badge, EmptyState, Notice, PageHeader, Panel } from "../ui";
 import { AddChildForm } from "./add-child-form";
+import { ClassStep, currentEnrollment } from "./classes";
 import { PlacementStatusBadge } from "./student";
 
 const RELATION: Record<string, string> = { orang_tua: "Orang tua", wali: "Wali", lainnya: "Lainnya" };
@@ -14,6 +16,7 @@ function LinkBadge({ status }: { status: string }) {
 
 export async function GuardianHome({ viewer, error }: { viewer: Viewer; error?: string }) {
   const [children, programs] = await Promise.all([guardianChildren(viewer.id), activePrograms()]);
+  const enrollments = await studentEnrollments(children.map((c) => c.student.id));
   const firstName = (viewer.fullName || viewer.email).split(/[\s@]/)[0];
 
   return (
@@ -21,7 +24,13 @@ export async function GuardianHome({ viewer, error }: { viewer: Viewer; error?: 
       <PageHeader title={`Halo, ${firstName}!`} subtitle="Pantau perjalanan belajar setiap anak dari sini." />
       {error && <Notice tone="red">{error}</Notice>}
       {children.length === 0 && <EmptyState icon="users" title="Belum ada anak terdaftar" text="Tambahkan anak dari menu Anak Saya." />}
-      {children.map(({ student, link, attempt }) => (
+      {children.map(({ student, link, attempt }) => {
+        const current = currentEnrollment(enrollments.filter((e) => e.student_id === student.id));
+        const stage = journeyStage(attempt, current);
+        const learner = { student, attempt, linkStatus: link.status };
+        const classStep =
+          attempt?.status === "published" || current ? <ClassStep learner={learner} enrollment={current} base="/portal/guardian" query={`?anak=${student.id}`} /> : undefined;
+        return (
         <Panel key={student.id}>
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -33,17 +42,18 @@ export async function GuardianHome({ viewer, error }: { viewer: Viewer; error?: 
             </div>
             <LinkBadge status={link.status} />
           </div>
-          <JourneyStepper stage={journeyStage(attempt)} />
+          <JourneyStepper stage={stage} />
           <div className="mt-6 border-t border-orange/15 pt-5">
-            <NextStepCard attempt={attempt} studentId={student.id} returnTo="/portal/guardian" who={student.full_name} />
+            <NextStepCard attempt={attempt} studentId={student.id} returnTo="/portal/guardian" who={student.full_name} classStep={classStep} />
           </div>
-          {attempt?.status === "published" && (
+          {attempt?.status === "published" && stage === 2 && (
             <div className="mt-6 border-t border-orange/15 pt-5">
               <PlacementResult attempt={attempt} programs={programs} />
             </div>
           )}
         </Panel>
-      ))}
+        );
+      })}
     </div>
   );
 }

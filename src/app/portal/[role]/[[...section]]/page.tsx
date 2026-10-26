@@ -1,10 +1,13 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { Icon } from "@/components/icons";
 import { AdminGuardians, AdminRegistrations } from "@/components/portal/views/admin";
+import { AdminBatches, AdminHome, AdminPayments, OwnerSettings, TutorClasses } from "@/components/portal/views/admin-classes";
+import { PaymentPage, ProgramPage } from "@/components/portal/views/classes";
 import { GuardianChildren, GuardianHome } from "@/components/portal/views/guardian";
 import { LeadPlacement, TutorPlacement } from "@/components/portal/views/placement-staff";
 import { QuestionBank } from "@/components/portal/views/question-bank";
 import { StudentHome, StudentPlacement } from "@/components/portal/views/student";
+import { menuFor } from "@/lib/menu";
 import { isRole, ROLE_LABEL, ROLE_MENU, type Role } from "@/lib/roles";
 import { requireViewer, type Viewer } from "@/lib/session";
 
@@ -15,12 +18,17 @@ const VIEWS: Partial<Record<Role, Record<string, (p: ViewProps) => Promise<React
   student: {
     "": ({ viewer, params }) => StudentHome({ viewer, error: params.galat }),
     placement: ({ viewer, params }) => StudentPlacement({ viewer, error: params.galat }),
+    program: ({ viewer, params }) => ProgramPage({ viewer, role: "student", params }),
+    pembayaran: ({ viewer, params }) => PaymentPage({ viewer, role: "student", params }),
   },
   guardian: {
     "": ({ viewer, params }) => GuardianHome({ viewer, error: params.galat }),
     anak: ({ viewer, params }) => GuardianChildren({ viewer, error: params.galat }),
+    program: ({ viewer, params }) => ProgramPage({ viewer, role: "guardian", params }),
+    pembayaran: ({ viewer, params }) => PaymentPage({ viewer, role: "guardian", params }),
   },
   tutor: {
+    kelas: ({ viewer }) => TutorClasses({ viewer }),
     placement: ({ viewer, params }) => TutorPlacement({ viewer, params }),
   },
   lead: {
@@ -28,8 +36,14 @@ const VIEWS: Partial<Record<Role, Record<string, (p: ViewProps) => Promise<React
     "bank-soal": ({ params }) => QuestionBank({ params }),
   },
   admin: {
+    "": ({ viewer }) => AdminHome({ viewer }),
+    batch: ({ params }) => AdminBatches({ params }),
+    pembayaran: ({ params }) => AdminPayments({ params }),
     pendaftaran: ({ params }) => AdminRegistrations({ params }),
     "siswa-wali": () => AdminGuardians(),
+  },
+  owner: {
+    pengaturan: () => OwnerSettings(),
   },
 };
 
@@ -47,6 +61,8 @@ export default async function PortalSection({
   if (!item) notFound();
 
   const viewer = await requireViewer();
+  // Menu yang disembunyikan di mode Calon Siswa dikembalikan ke beranda.
+  if (slug && !(await menuFor(role, viewer.id)).some((m) => m.slug === slug)) redirect(`/portal/${role}`);
   const view = VIEWS[role]?.[slug];
   if (view) return <div className="mx-auto max-w-6xl">{await view({ viewer, params: query })}</div>;
 

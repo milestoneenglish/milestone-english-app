@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { PortalShell } from "@/components/portal/portal-shell";
+import { menuFor } from "@/lib/menu";
 import { isRole } from "@/lib/roles";
 import { requireViewer } from "@/lib/session";
 
@@ -12,8 +13,10 @@ export default async function RoleLayout({ children, params }: { children: React
   // Role diperiksa di server; pengguna tidak bisa membuka portal role yang tidak dimilikinya.
   if (!viewer.roles.includes(role)) redirect("/portal");
 
+  const menu = await menuFor(role, viewer.id);
+
   return (
-    <PortalShell role={role} roles={viewer.roles} name={viewer.fullName || viewer.email} email={viewer.email}>
+    <PortalShell role={role} roles={viewer.roles} menu={menu} name={viewer.fullName || viewer.email} email={viewer.email}>
       {children}
     </PortalShell>
   );

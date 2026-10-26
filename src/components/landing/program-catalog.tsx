@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
 import { PROGRAM_CATEGORIES, type Program, type ProgramCategory } from "@/data/catalog";
+import type { OpenBatch } from "@/lib/content";
 
 const CATEGORY_PHOTO: Record<ProgramCategory, string> = {
   "Everyday English": "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=900&q=80",
@@ -22,7 +23,10 @@ const CATEGORY_ICON: Record<ProgramCategory, "mic" | "book" | "star" | "chart"> 
 const rupiah = (value: number) =>
   new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(value);
 
-export function ProgramCatalog({ programs }: { programs: Program[] }) {
+const BATCH_DATE = new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "short", timeZone: "Asia/Jakarta" });
+const batchDate = (d: string) => BATCH_DATE.format(new Date(`${d}T00:00:00+07:00`));
+
+export function ProgramCatalog({ programs, batches = [] }: { programs: Program[]; batches?: OpenBatch[] }) {
   const [filter, setFilter] = useState<ProgramCategory | "all">("all");
   const [selected, setSelected] = useState<Program | null>(null);
   const visible = filter === "all" ? programs : programs.filter((p) => p.category === filter);
@@ -100,6 +104,14 @@ export function ProgramCatalog({ programs }: { programs: Program[] }) {
                   <p className="mt-1 font-bold text-white">{p.capacity} peserta</p>
                 </div>
               </div>
+              {(() => {
+                const next = batches.find((b) => b.program_slug === p.slug && b.seats_left > 0);
+                return (
+                  <p className="mt-4 rounded-xl border border-orange/25 bg-navy/50 px-3 py-2 text-[11px] font-bold text-amber-100">
+                    {next ? `Batch berikutnya mulai ${batchDate(next.start_date)} · sisa ${next.seats_left} kursi` : "Batch baru segera dibuka"}
+                  </p>
+                );
+              })()}
               <div className="mt-5 flex items-center justify-between">
                 <span className="text-lg font-black text-orange">{rupiah(p.price_idr)}</span>
                 <span className="text-[10px] font-black uppercase tracking-[0.18em] text-orange">{p.code}</span>
@@ -167,6 +179,25 @@ export function ProgramCatalog({ programs }: { programs: Program[] }) {
                   <h3 className="font-black text-white">Bukti progres</h3>
                   <p className="lp-muted mt-2 text-sm leading-relaxed">{selected.evidence}</p>
                 </div>
+              </div>
+              <div className="lp-card-soft mt-4 p-5">
+                <h3 className="font-black text-white">Jadwal batch yang dibuka</h3>
+                {batches.some((b) => b.program_slug === selected.slug) ? (
+                  <ul className="mt-2 space-y-2 text-sm">
+                    {batches
+                      .filter((b) => b.program_slug === selected.slug)
+                      .map((b) => (
+                        <li key={b.code} className="flex flex-wrap justify-between gap-2 text-amber-100">
+                          <span>
+                            Mulai {batchDate(b.start_date)} · {b.schedule_label}
+                          </span>
+                          <span className={b.seats_left > 0 ? "font-bold text-orange" : "font-bold text-rose-300"}>{b.seats_left > 0 ? `Sisa ${b.seats_left} kursi` : "Penuh"}</span>
+                        </li>
+                      ))}
+                  </ul>
+                ) : (
+                  <p className="lp-muted mt-2 text-sm leading-relaxed">Batch baru segera dibuka. Daftar dan kerjakan placement test sekarang agar siap memilih jadwal begitu dibuka.</p>
+                )}
               </div>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-end">
                 <button type="button" onClick={() => setSelected(null)} className="rounded-full border border-orange/50 px-6 py-3 text-sm font-black text-orange hover:bg-orange/10">

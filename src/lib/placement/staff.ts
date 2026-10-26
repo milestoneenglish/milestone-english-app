@@ -1,4 +1,5 @@
 import "server-only";
+import { notify, studentRecipients } from "@/lib/notify";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { levelFromRubric, overallLevel, recommendPrograms, rubricAverage, SPEAKING_CRITERIA, WRITING_CRITERIA, type Level, type SectionName } from "./levels";
 import { ANSWER_BUCKET, loadAttempt, PlacementError, type AttemptRow } from "./server";
@@ -184,6 +185,10 @@ export async function publishResult(actorId: string, attemptId: string, programI
     .eq("status", "reviewed");
   if (error) throw new PlacementError("Hasil gagal diterbitkan.");
   await audit(actorId, "placement_published", attemptId, { program_ids: programIds });
+  if (attempt.student_id) {
+    const { data: s } = await createAdminClient().from("students").select("full_name").eq("id", attempt.student_id).maybeSingle();
+    await notify("placement_published", await studentRecipients(attempt.student_id), { name: s?.full_name ?? "", level: attempt.levels.overall ?? "-" }, { type: "placement_attempts", id: attemptId });
+  }
 }
 
 // Tes ulang: hasil lama tetap tersimpan, siswa mendapat tes baru.

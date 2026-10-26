@@ -8,8 +8,11 @@ import { formatDateTime } from "./ui";
 
 export const JOURNEY = ["Daftar", "Placement", "Pilih kelas & bayar", "Onboarding", "Belajar", "Laporan & lanjut"] as const;
 
-// Tahap saat ini (0-based) dari data yang sudah ada. Tahap 3 dst. diaktifkan di fase berikutnya.
-export function journeyStage(attempt: AttemptRow | null) {
+// Tahap saat ini (0-based): placement, lalu kelas dan pembayaran, onboarding, belajar, laporan.
+export function journeyStage(attempt: AttemptRow | null, enrollment?: { status: string; onboarded_at: string | null } | null) {
+  if (enrollment?.status === "completed") return 5;
+  if (enrollment?.status === "active") return enrollment.onboarded_at ? 4 : 3;
+  if (enrollment) return 2;
   if (!attempt || attempt.status !== "published") return 1;
   return 2;
 }
@@ -122,7 +125,20 @@ export function RubricSummary({ attempt }: { attempt: AttemptRow }) {
 }
 
 // Kartu langkah berikutnya untuk satu siswa, sesuai status placement-nya.
-export function NextStepCard({ attempt, studentId, returnTo, who }: { attempt: AttemptRow | null; studentId: string; returnTo: string; who?: string }) {
+export function NextStepCard({
+  attempt,
+  studentId,
+  returnTo,
+  who,
+  classStep,
+}: {
+  attempt: AttemptRow | null;
+  studentId: string;
+  returnTo: string;
+  who?: string;
+  classStep?: React.ReactNode;
+}) {
+  if (classStep && (!attempt || attempt.status === "published")) return <>{classStep}</>;
   const subject = who ? `${who} ` : "";
   if (!attempt) {
     return (

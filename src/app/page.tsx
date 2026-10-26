@@ -45,7 +45,7 @@ const STATS = [
 ] as const;
 
 export default async function LandingPage() {
-  const { programs, faqs, testimonials, contact, hero, preview } = await getLandingContent();
+  const { programs, batches, faqs, testimonials, contact, hero, preview } = await getLandingContent();
   const wa = contact.whatsapp ? whatsappLink(contact.whatsapp) : null;
 
   return (
@@ -168,7 +168,7 @@ export default async function LandingPage() {
             accent={`${programs.length} Program`}
             desc="Setiap program memiliki durasi, level masuk, kapasitas 4–6 peserta, dan target outcome yang terukur."
           />
-          <ProgramCatalog programs={programs} />
+          <ProgramCatalog programs={programs} batches={batches} />
         </div>
       </section>
 

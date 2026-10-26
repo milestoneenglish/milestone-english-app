@@ -1,6 +1,7 @@
 import "server-only";
 import { createHash, randomBytes } from "node:crypto";
 import { cookies } from "next/headers";
+import { notify, studentRecipients } from "@/lib/notify";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { AUTO_SECTIONS, levelFromPercent, type Level, type SectionName } from "./levels";
@@ -313,6 +314,11 @@ export async function submitAttempt(attemptId: string): Promise<SubmitResult> {
     .eq("id", attemptId)
     .eq("status", "in_progress");
   if (error) throw new PlacementError("Tes gagal dikirim. Coba lagi.");
+  const { data: owner } = await admin.from("placement_attempts").select("student_id, students(full_name)").eq("id", attemptId).maybeSingle();
+  if (owner?.student_id) {
+    const name = (owner.students as unknown as { full_name: string } | null)?.full_name ?? "";
+    await notify("placement_submitted", await studentRecipients(owner.student_id), { name }, { type: "placement_attempts", id: attemptId });
+  }
   return { levels, scores };
 }
 
