@@ -1,70 +1,14 @@
-// Menguji migrasi dan aturan keamanan (RLS) di Postgres sungguhan (PGlite),
-// dengan tiruan minimal skema auth milik Supabase.
-import { PGlite } from "@electric-sql/pglite";
-import { pgcrypto } from "@electric-sql/pglite/contrib/pgcrypto";
-import { readdirSync, readFileSync } from "node:fs";
+// Menguji migrasi dan aturan keamanan (RLS) fondasi di Postgres sungguhan (PGlite).
 import { beforeAll, describe, expect, it } from "vitest";
+import { createTestDb } from "./db-helpers";
 
-const root = new URL("../supabase/", import.meta.url);
-
-const AUTH_STUB = `
-create role anon nologin;
-create role authenticated nologin;
-create schema auth;
-create table auth.users (
-  id uuid primary key default gen_random_uuid(),
-  email text,
-  raw_user_meta_data jsonb default '{}'::jsonb,
-  raw_app_meta_data jsonb default '{}'::jsonb
-);
-create function auth.uid() returns uuid language sql stable as $$
-  select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid
-$$;
-grant usage on schema public, auth to anon, authenticated;
-grant execute on function auth.uid() to anon, authenticated;
-`;
-
-const GRANTS = `
-grant select, insert, update, delete on all tables in schema public to anon, authenticated;
-`;
-
-let db: PGlite;
-
-async function createUser(email: string, meta: object = {}, app: object = {}) {
-  const res = await db.query<{ id: string }>(
-    "insert into auth.users (email, raw_user_meta_data, raw_app_meta_data) values ($1, $2, $3) returning id",
-    [email, JSON.stringify(meta), JSON.stringify(app)],
-  );
-  return res.rows[0].id;
-}
-
-// Menjalankan query sebagai pengguna tertentu (atau anon), lalu kembali ke superuser.
-async function as<T>(userId: string | null, sql: string, params: unknown[] = []) {
-  await db.exec("reset role");
-  await db.query("select set_config('request.jwt.claim.sub', $1, false)", [userId ?? ""]);
-  await db.exec(userId ? "set role authenticated" : "set role anon");
-  try {
-    return await db.query<T>(sql, params);
-  } finally {
-    await db.exec("reset role");
-  }
-}
-
-async function rolesOf(userId: string) {
-  const res = await db.query<{ role: string }>("select role::text from public.user_roles where user_id = $1 order by role", [userId]);
-  return res.rows.map((r) => r.role);
-}
+let db: Awaited<ReturnType<typeof createTestDb>>["db"];
+let createUser: Awaited<ReturnType<typeof createTestDb>>["createUser"];
+let as: Awaited<ReturnType<typeof createTestDb>>["as"];
+let rolesOf: Awaited<ReturnType<typeof createTestDb>>["rolesOf"];
 
 beforeAll(async () => {
-  db = new PGlite({ extensions: { pgcrypto } });
-  await db.exec(AUTH_STUB);
-  for (const file of readdirSync(new URL("migrations/", root)).sort()) {
-    await db.exec(readFileSync(new URL(`migrations/${file}`, root), "utf8"));
-  }
-  await db.exec(GRANTS);
-  // GRANTS di atas memberi update penuh; kembalikan pembatasan kolom profil seperti di Supabase.
-  await db.exec("revoke update on public.profiles from authenticated; grant update (full_name, phone) on public.profiles to authenticated;");
-  await db.exec(readFileSync(new URL("seed.sql", root), "utf8"));
+  ({ db, createUser, as, rolesOf } = await createTestDb());
 });
 
 describe("pendaftaran akun", () => {

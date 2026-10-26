@@ -37,3 +37,10 @@ export const requireViewer = cache(async (): Promise<Viewer> => {
 
   return { id: user.id, email: profile.email, fullName: profile.full_name, roles };
 });
+
+// Pengguna yang memegang salah satu role yang diminta; selain itu dikembalikan ke portal.
+export async function requireRole(...allowed: Role[]): Promise<Viewer> {
+  const viewer = await requireViewer();
+  if (!viewer.roles.some((r) => allowed.includes(r))) redirect("/portal");
+  return viewer;
+}

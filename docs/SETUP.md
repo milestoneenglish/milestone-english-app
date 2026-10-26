@@ -10,12 +10,24 @@ Panduan ini menyambungkan aplikasi ke Supabase supaya login dan database aktif. 
 
 ## 2. Pasang database
 
-1. Di dashboard Supabase, buka **SQL Editor** lalu **New query**.
-2. Salin seluruh isi `supabase/migrations/20261026000001_foundation.sql`, tempel, klik **Run**.
-3. Buat query baru, salin seluruh isi `supabase/migrations/20261026000002_password_login.sql`, tempel, klik **Run**.
-4. Buat query baru, salin seluruh isi `supabase/seed.sql`, tempel, klik **Run**. Ini mengisi 12 program, FAQ, dan pengaturan awal.
+Cara termudah: biarkan skrip yang memasang semua migrasi.
 
-Jalankan file migrasi sesuai urutan nomornya. Setiap ada file migrasi baru di folder `supabase/migrations`, jalankan file itu saja.
+1. Di Supabase klik **Connect** → tab **Connection String** → pilih **Session pooler**, salin URI-nya.
+2. Tambahkan ke `.env.local` (ganti `[YOUR-PASSWORD]` dengan password database proyek):
+
+   ```
+   SUPABASE_DB_URL=postgresql://postgres.xxxx:PASSWORD@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres
+   ```
+
+3. Jalankan:
+
+   ```bash
+   npm run db:migrate
+   ```
+
+Skrip memasang migrasi yang belum ada (urut sesuai nomor file di `supabase/migrations`), mengisi data awal tanpa menimpa data yang sudah ada, dan membuat bucket storage privat untuk rekaman placement. Aman dijalankan berulang setiap ada pembaruan.
+
+Tanpa `SUPABASE_DB_URL`, kamu juga bisa menempel isi setiap file migrasi lalu `supabase/seed.sql` di **SQL Editor** secara berurutan.
 
 ## 3. Atur login
 
@@ -68,4 +80,7 @@ Buka `http://localhost:3100`. Landing page sekarang membaca data dari Supabase (
 | --- | --- |
 | `npm test` | Menjalankan tes database dan keamanan |
 | `npm run check` | Cek tipe, lint, dan tes sekaligus |
+| `npm run setup:role -- email role "Nama"` | Memberi role staf (owner, admin, lead, tutor) ke akun, atau membuat akun staf dengan password sementara |
+| `npm run e2e:fase1` | Uji otomatis seluruh alur Fase 1 lewat browser (server dev harus berjalan); data uji dihapus otomatis |
+| `npm run db:migrate` | Memasang migrasi baru, seed, dan bucket storage ke Supabase |
 | `npm run seed:generate` | Membuat ulang `supabase/seed.sql` dari `src/data/catalog.ts` |

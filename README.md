@@ -28,8 +28,8 @@ Tanpa `.env.local`, aplikasi berjalan dalam mode pratinjau: landing page memakai
 
 | Fase | Isi | Status |
 | --- | --- | --- |
-| 0 | Fondasi: database, role, login OTP email, landing page, kerangka portal | Selesai, menunggu review |
-| 1 | Pendaftaran dan placement test | Belum |
+| 0 | Fondasi: database, role, login email + password, landing page, kerangka portal | Selesai |
+| 1 | Pendaftaran siswa/wali, placement test 5 bagian, penilaian tutor, publikasi Lead | Selesai, lulus uji alur 34/34; menunggu review |
 | 2 | Kelas, pembayaran, onboarding, notifikasi | Belum |
 | 3 | Belajar: kurikulum, sesi, absensi, tugas | Belum |
 | 4 | Assessment dan laporan | Belum |
