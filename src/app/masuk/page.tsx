@@ -6,12 +6,20 @@ import { LoginForm } from "./login-form";
 
 export const metadata: Metadata = { title: "Masuk" };
 
-export default function LoginPage() {
+const ERRORS: Record<string, string> = {
+  link: "Link masuk tidak valid atau sudah kedaluwarsa. Minta email baru, lalu buka linknya di browser yang sama.",
+  nonaktif: "Akun ini sedang nonaktif. Hubungi tim Milestone English.",
+};
+
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ galat?: string; status?: string }> }) {
+  const { galat, status } = await searchParams;
+  const initialError = ERRORS[galat ?? ""] ?? ERRORS[status ?? ""] ?? "";
+
   return (
     <AuthShell
       kicker="Portal Milestone English"
       title="Masuk ke portal"
-      intro="Satu pintu untuk siswa, wali, tutor, dan tim Milestone. Masukkan email yang terdaftar, lalu ketik kode 6 digit yang kami kirim."
+      intro="Satu pintu untuk siswa, wali, tutor, dan tim Milestone. Masukkan email yang terdaftar, lalu buka email masuk yang kami kirim."
       aside={
         <div className="border-t border-orange/20 pt-6">
           <p className="text-xs text-amber-200/80">Belum punya akun?</p>
@@ -21,7 +29,7 @@ export default function LoginPage() {
         </div>
       }
     >
-      <LoginForm enabled={isSupabaseConfigured} />
+      <LoginForm enabled={isSupabaseConfigured} initialError={initialError} />
     </AuthShell>
   );
 }

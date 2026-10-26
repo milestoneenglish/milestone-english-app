@@ -14,18 +14,23 @@ Panduan ini menyambungkan aplikasi ke Supabase supaya login dan database aktif. 
 2. Salin seluruh isi `supabase/migrations/20261026000001_foundation.sql`, tempel, klik **Run**.
 3. Buat query baru, salin seluruh isi `supabase/seed.sql`, tempel, klik **Run**. Ini mengisi 12 program, FAQ, dan pengaturan awal.
 
-## 3. Atur login kode email
+## 3. Atur login email
 
 1. Buka **Authentication > Sign In / Providers > Email**:
    - Pastikan **Email** aktif.
    - **Email OTP Expiration**: `600` (10 menit).
    - **Email OTP Length**: `6`.
-2. Buka **Authentication > Email Templates > Magic Link**:
-   - Subject: `Kode masuk Milestone English`
-   - Body: salin isi `supabase/templates/kode-masuk.html`.
-3. Buka **Authentication > URL Configuration**, isi **Site URL** dengan `http://localhost:3100` untuk sekarang. Setelah deploy, ganti dengan domain kamu.
+2. Buka **Authentication > URL Configuration**:
+   - **Site URL**: `http://localhost:3100` untuk sekarang. Setelah deploy, ganti dengan domain kamu.
+   - **Redirect URLs**: tambahkan `http://localhost:3100/**`. Setelah deploy, tambahkan juga `https://domainkamu.com/**`.
+3. Buka **Authentication > Emails**, isi Subject template **Magic Link** dengan `Kode masuk Milestone English`.
 
-Catatan: email bawaan Supabase dibatasi beberapa email per jam dan hanya cocok untuk uji coba. Sebelum dipakai siswa, sambungkan Resend di **Project Settings > Authentication > SMTP Settings** (dikerjakan bersama di Fase 2).
+Selama belum memakai SMTP sendiri, Supabase mengirim email bawaan berisi **link masuk**. Aplikasi menerima link ini lewat `/auth/callback`. Batasannya:
+
+- Email bawaan hanya terkirim ke alamat anggota tim di akun Supabase, dan hanya beberapa email per jam. Untuk uji coba, buat akun Owner dengan email login Supabase kamu.
+- Buka link di browser yang sama dengan tempat kamu meminta email.
+
+Setelah domain dan Resend siap (Fase 2), sambungkan SMTP di **Authentication > Emails > SMTP Settings**, lalu ganti isi template Magic Link dengan `supabase/templates/kode-masuk.html`. Email kemudian berisi kode 6 digit, dan link lama tetap berfungsi sebagai cadangan.
 
 ## 4. Isi kunci di laptop
 
@@ -49,7 +54,7 @@ npm run setup:owner -- emailkamu@domain.com "Nama Kamu"
 npm run dev -- -p 3100
 ```
 
-Buka `http://localhost:3100`. Landing page sekarang membaca data dari Supabase (tanda "Mode pratinjau" hilang). Klik **Masuk**, masukkan email Owner, ketik kode dari email, dan kamu masuk ke portal Owner.
+Buka `http://localhost:3100`. Landing page sekarang membaca data dari Supabase (tanda "Mode pratinjau" hilang). Klik **Masuk**, masukkan email Owner, lalu klik link di email yang masuk. Kamu langsung masuk ke portal Owner.
 
 ## Perintah lain
 

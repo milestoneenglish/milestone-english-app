@@ -41,4 +41,4 @@ if (roleError) {
   process.exit(1);
 }
 
-console.log(`Selesai. ${normalized} sekarang Owner. Masuk di /masuk dengan kode yang dikirim ke email tersebut.`);
+console.log(`Selesai. ${normalized} sekarang Owner. Masuk di /masuk lewat email yang dikirim ke alamat tersebut.`);

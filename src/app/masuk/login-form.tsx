@@ -8,13 +8,13 @@ import { createClient } from "@/lib/supabase/client";
 const RESEND_SECONDS = 60;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export function LoginForm({ enabled }: { enabled: boolean }) {
+export function LoginForm({ enabled, initialError = "" }: { enabled: boolean; initialError?: string }) {
   const router = useRouter();
   const [step, setStep] = useState<"email" | "code">("email");
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(initialError);
   const [cooldown, setCooldown] = useState(0);
 
   useEffect(() => {
@@ -33,7 +33,7 @@ export function LoginForm({ enabled }: { enabled: boolean }) {
     setBusy(true);
     const { error: err } = await createClient().auth.signInWithOtp({
       email: normalized,
-      options: { shouldCreateUser: false },
+      options: { shouldCreateUser: false, emailRedirectTo: `${window.location.origin}/auth/callback` },
     });
     setBusy(false);
     // Email yang belum terdaftar mendapat respons yang sama, supaya daftar akun tidak bisa ditebak.
@@ -74,9 +74,11 @@ export function LoginForm({ enabled }: { enabled: boolean }) {
 
   return (
     <div>
-      <h2 className="text-xl font-black text-orange">{step === "email" ? "Masuk dengan email" : "Masukkan kode"}</h2>
-      <p className="mt-1 text-xs text-amber-200/80">
-        {step === "email" ? "Kami akan mengirim kode 6 digit ke email kamu." : `Jika ${email} terdaftar, kode 6 digit sudah kami kirim. Kode berlaku 10 menit.`}
+      <h2 className="text-xl font-black text-orange">{step === "email" ? "Masuk dengan email" : "Cek email kamu"}</h2>
+      <p className="mt-1 text-xs leading-relaxed text-amber-200/80">
+        {step === "email"
+          ? "Kami akan mengirim email berisi kode atau link masuk."
+          : `Jika ${email} terdaftar, email masuk sudah kami kirim. Klik link di email itu dari browser ini, atau ketik kode 6 digit jika emailnya berisi kode.`}
       </p>
 
       {step === "email" ? (
@@ -103,7 +105,7 @@ export function LoginForm({ enabled }: { enabled: boolean }) {
           </label>
           {error && <p className="text-sm font-bold text-rose-300" role="alert">{error}</p>}
           <button type="submit" disabled={busy} className="btn-orange flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm">
-            <Icon name="mail" className="h-4 w-4" /> {busy ? "Mengirim kode..." : "Kirim kode masuk"}
+            <Icon name="mail" className="h-4 w-4" /> {busy ? "Mengirim..." : "Kirim email masuk"}
           </button>
         </form>
       ) : (
@@ -145,7 +147,7 @@ export function LoginForm({ enabled }: { enabled: boolean }) {
               Ganti email
             </button>
             <button type="button" disabled={cooldown > 0 || busy} onClick={() => void requestCode()} className="font-bold text-orange hover:text-orange-light disabled:text-amber-200/50">
-              {cooldown > 0 ? `Kirim ulang dalam ${cooldown} detik` : "Kirim ulang kode"}
+              {cooldown > 0 ? `Kirim ulang dalam ${cooldown} detik` : "Kirim ulang email"}
             </button>
           </div>
         </form>
