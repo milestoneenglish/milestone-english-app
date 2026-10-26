@@ -193,7 +193,12 @@ export async function WeekPanel({ studentId, role, who }: { studentId: string; r
   return (
     <Panel>
     <div className="space-y-4">
-      <p className="text-[11px] font-black uppercase tracking-[0.2em] text-amber-200/80">Minggu ini{who ? ` · ${who}` : ""}</p>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-[11px] font-black uppercase tracking-[0.2em] text-amber-200/80">Minggu ini{who ? ` · ${who}` : ""}</p>
+        <Link href={`${base}/progres${q}`} className="text-xs font-black text-orange hover:underline">
+          Lihat progres nilai →
+        </Link>
+      </div>
       <div className="grid gap-4 md:grid-cols-3">
         <div className="lp-card-soft p-4">
           <p className="text-[11px] font-bold text-amber-200/70">Sesi berikutnya</p>

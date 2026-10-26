@@ -1,8 +1,10 @@
 import Link from "next/link";
+import { ASSESSMENT_LABEL } from "@/lib/academic";
 import { longDate } from "@/lib/classes";
 import { SUBMISSION_LABEL } from "@/lib/curriculum";
 import { assignmentDetail, sessionDetail, sessionEnd, tutorAssignments, tutorQueue, tutorSessions, whenLabel, type TutorSession } from "@/lib/learning";
 import { placementQueue } from "@/lib/placement/staff";
+import { tutorAcademicQueue } from "@/lib/reports";
 import type { Viewer } from "@/lib/session";
 import { Badge, EmptyState, formatDateTime, Notice, PageHeader, Panel, Tabs } from "../ui";
 import { QueueCard } from "./admin-classes";
@@ -43,16 +45,26 @@ function SessionRow({ s }: { s: TutorSession }) {
 }
 
 export async function TutorHome({ viewer }: { viewer: Viewer }) {
-  const [q, placement] = await Promise.all([tutorQueue(viewer.id), placementQueue({ evaluatorId: viewer.id })]);
+  const [q, placement, academic] = await Promise.all([tutorQueue(viewer.id), placementQueue({ evaluatorId: viewer.id }), tutorAcademicQueue(viewer.id)]);
   const firstName = (viewer.fullName || viewer.email).split(/[\s@]/)[0];
   const next = q.upcoming[0];
   return (
     <div className="fade-in space-y-6">
       <PageHeader title={`Halo, ${firstName}!`} subtitle="Perlu tindakan hari ini." />
       {q.attendanceOverdue > 0 && <Notice tone="red">{q.attendanceOverdue} sesi sudah lewat 24 jam tanpa absensi. Isi sekarang agar wali dan laporan tidak tertunda.</Notice>}
+      {academic.assessmentCounts.overdue > 0 && <Notice tone="red">{academic.assessmentCounts.overdue} assessment siswa sudah lewat 48 jam setelah sesinya.</Notice>}
+      {academic.reportsReturned > 0 && <Notice tone="red">{academic.reportsReturned} laporan dikembalikan Academic Lead untuk direvisi.</Notice>}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <QueueCard href="/portal/tutor/sesi" icon="calendar" count={q.attendancePending.length} title="Absensi belum diisi" text="Isi paling lambat 24 jam setelah sesi." />
         <QueueCard href="/portal/tutor/tugas" icon="task" count={q.toReview} title="Tugas menunggu feedback" text="Beri feedback atau minta revisi (maksimal 2 kali)." />
+        <QueueCard
+          href="/portal/tutor/assessment"
+          icon="check"
+          count={academic.assessmentCounts.pending}
+          title="Assessment perlu dinilai"
+          text={`Awal, tengah, dan akhir; ≤48 jam setelah sesi${academic.assessmentCounts.makeup ? ` · ${academic.assessmentCounts.makeup} susulan` : ""}.`}
+        />
+        <QueueCard href="/portal/tutor/laporan" icon="report" count={academic.reportsToWrite} title="Laporan perlu disusun" text="Ajukan ke Academic Lead ≤3 hari setelah sesi terakhir." />
         <QueueCard
           href="/portal/tutor/placement"
           icon="test"
@@ -161,6 +173,14 @@ async function TutorSessionDetail({ viewer, id }: { viewer: Viewer; id: string }
           </div>
         }
       />
+      {module?.assessment && (
+        <Notice>
+          Sesi ini adalah titik assessment {ASSESSMENT_LABEL[module.assessment].toLowerCase()}. Nilai setiap siswa dengan rubrik paling lambat 48 jam setelah sesi.{" "}
+          <Link href={`/portal/tutor/assessment?batch=${batch.id}&kind=${module.assessment}`} className="underline">
+            Buka lembar assessment →
+          </Link>
+        </Notice>
+      )}
       <Panel title={module ? `Modul: ${module.title}` : "Modul sesi"}>
         {module ? <ModuleContent module={module} /> : <p className="text-sm text-slate-400">Batch ini belum memakai kurikulum. Siapkan materi sesuai rencana program.</p>}
       </Panel>

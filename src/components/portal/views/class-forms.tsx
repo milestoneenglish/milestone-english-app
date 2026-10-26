@@ -91,7 +91,7 @@ export function BatchPicker({ studentId, batch, level, payHref }: { studentId: s
         <div className="mt-4 space-y-3 rounded-xl border border-orange/30 bg-navy-dark/70 p-4">
           {!batch.recommended && (
             <p className="rounded-lg border border-amber-400/40 bg-amber-500/10 px-3 py-2 text-xs font-bold text-amber-200">
-              Program ini tidak termasuk rekomendasi placement{level ? ` (level ${level})` : ""}. Materinya mungkin terlalu mudah atau terlalu sulit. Tetap lanjut bila kamu yakin.
+              Program ini tidak termasuk rekomendasi placement atau laporan terakhir{level ? ` (level ${level})` : ""}. Materinya mungkin terlalu mudah atau terlalu sulit. Tetap lanjut bila kamu yakin.
             </p>
           )}
           <p className="text-sm text-amber-100">

@@ -80,6 +80,34 @@ export const TEMPLATES = {
     ],
     cta: { label: "Baca feedback", path: "/portal" },
   }),
+  report_submitted: (d: { name: string; program: string; batch: string }): Message => ({
+    subject: `Laporan ${d.name} menunggu review`,
+    lines: [`Tutor mengajukan laporan akhir ${d.name} (${d.program}, batch ${d.batch}).`, "Tinjau lalu terbitkan, atau kembalikan dengan catatan, paling lambat 2 hari."],
+    cta: { label: "Review laporan", path: "/portal/lead/laporan" },
+  }),
+  report_returned: (d: { name: string; program: string; batch: string; comment: string }): Message => ({
+    subject: `Laporan ${d.name} dikembalikan untuk revisi`,
+    lines: [`Academic Lead mengembalikan laporan ${d.name} (${d.program}, batch ${d.batch}).`, `Catatan: ${d.comment}`],
+    cta: { label: "Revisi laporan", path: "/portal/tutor/laporan" },
+  }),
+  report_published: (d: { name: string; program: string }): Message => ({
+    subject: `Laporan ${d.program} ${d.name} sudah terbit`,
+    lines: [`Laporan hasil belajar ${d.name} untuk program ${d.program} sudah terbit.`, "Lihat perkembangan nilai, level akhir, dan rekomendasi program berikutnya, lalu unduh PDF-nya di portal."],
+    cta: { label: "Lihat laporan", path: "/portal" },
+  }),
+  academic_overdue: (d: { assessments: number; reports: number }): Message => ({
+    subject: "Assessment atau laporan melewati batas waktu",
+    lines: [
+      [d.assessments ? `${d.assessments} assessment siswa` : "", d.reports ? `${d.reports} laporan akhir` : ""].filter(Boolean).join(" dan ") + " sudah melewati batas waktu.",
+      "Assessment dinilai paling lambat 48 jam setelah sesinya; laporan diajukan paling lambat 3 hari setelah sesi terakhir.",
+    ],
+    cta: { label: "Buka antrean", path: "/portal/tutor" },
+  }),
+  report_review_overdue: (d: { count: number }): Message => ({
+    subject: `${d.count} laporan menunggu review lebih dari 2 hari`,
+    lines: [`${d.count} laporan akhir sudah diajukan tutor lebih dari 2 hari dan belum ditinjau.`],
+    cta: { label: "Review laporan", path: "/portal/lead/laporan" },
+  }),
 } as const;
 
 export type TemplateKey = keyof typeof TEMPLATES;

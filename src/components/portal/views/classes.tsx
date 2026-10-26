@@ -3,6 +3,7 @@ import { Icon } from "@/components/icons";
 import { bankLine, batchSessions, listBatches, longDate, paymentSettings, studentEnrollments, type EnrollmentView } from "@/lib/classes";
 import { formatRupiah } from "@/lib/content";
 import type { AttemptRow } from "@/lib/placement/server";
+import { latestReports } from "@/lib/reports";
 import type { Viewer } from "@/lib/session";
 import { guardianChildren, ownStudent, type StudentRow } from "@/lib/students";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -136,11 +137,35 @@ export async function ClassStep({ learner, enrollment, base, query = "" }: { lea
       </div>
     );
   }
+  const { data: report } = await createAdminClient().from("reports").select("id, status").eq("enrollment_id", enrollment.id).maybeSingle();
+  if (report?.status === "published") {
+    const latest = (await latestReports([learner.student.id])).get(learner.student.id);
+    const reportHref = base.endsWith("guardian") ? `${base}/progres${query}` : `${base}/laporan`;
+    return (
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <Eyebrow>Program selesai · laporan terbit</Eyebrow>
+          <p className="mt-1 text-lg font-black text-white">
+            {batch.program.name} selesai{latest?.overall ? ` · level akhir ${latest.overall}` : ""}
+          </p>
+          <p className="text-sm text-slate-400">Baca laporan dan unduh PDF-nya, lalu lanjutkan ke program yang direkomendasikan tanpa placement ulang.</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Link href={reportHref} className="rounded-full border border-orange/40 px-5 py-3 text-sm font-black text-orange hover:bg-orange/10">
+            Lihat laporan
+          </Link>
+          <Link href={`${base}/program${query}`} className="btn-orange flex items-center gap-2 rounded-full px-6 py-3 text-sm">
+            Ambil program <Icon name="arrow" className="h-4 w-4" />
+          </Link>
+        </div>
+      </div>
+    );
+  }
   return (
     <div>
       <Eyebrow>Program selesai</Eyebrow>
-      <p className="mt-1 text-lg font-black text-white">{batch.program.name} sudah selesai</p>
-      <p className="text-sm text-slate-400">Laporan akhir disusun tutor dan tampil di portal setelah ditinjau Academic Lead.</p>
+      <p className="mt-1 text-lg font-black text-white">{batch.program.name} selesai, laporan sedang disiapkan tutor</p>
+      <p className="text-sm text-slate-400">Laporan akhir disusun tutor dan tampil di portal setelah ditinjau Academic Lead. Kamu akan menerima pemberitahuan saat laporan terbit.</p>
     </div>
   );
 }
@@ -222,10 +247,13 @@ export async function ProgramPage({ viewer, role, params }: { viewer: Viewer; ro
     return <EmptyState icon="users" title={role === "guardian" ? "Belum ada anak terdaftar" : "Profil siswa belum tersedia"} text={role === "guardian" ? "Tambahkan anak dari menu Anak Saya." : undefined} />;
   }
   const learner = learners.find((l) => l.student.id === params.anak) ?? learners[0];
-  const [enrollments, batches] = await Promise.all([studentEnrollments([learner.student.id]), listBatches({ status: ["open"] })]);
+  const [enrollments, batches, reports] = await Promise.all([studentEnrollments([learner.student.id]), listBatches({ status: ["open"] }), latestReports([learner.student.id])]);
   const published = learner.attempt?.status === "published" ? learner.attempt : null;
   const hasCompleted = enrollments.some((e) => e.status === "completed");
-  const recommended = new Set(published?.recommended_program_ids ?? []);
+  // Level dan rekomendasi diambil dari laporan terakhir; tanpa laporan, dari hasil placement.
+  const report = reports.get(learner.student.id);
+  const recommended = new Set(report?.recommended_program_ids.length ? report.recommended_program_ids : (published?.recommended_program_ids ?? []));
+  const level = report?.overall ?? published?.levels.overall ?? null;
   const taken = new Set(enrollments.filter((e) => ["pending_payment", "awaiting_verification", "active", "completed"].includes(e.status)).map((e) => e.batch.id));
   const pickable: PickableBatch[] = batches
     .filter((b) => !taken.has(b.id))
@@ -296,7 +324,7 @@ export async function ProgramPage({ viewer, role, params }: { viewer: Viewer; ro
         ) : (
           <div className="grid gap-4 lg:grid-cols-2">
             {pickable.map((b) => (
-              <BatchPicker key={b.id} studentId={learner.student.id} batch={b} level={published?.levels.overall ?? null} payHref={`${base}/pembayaran`} />
+              <BatchPicker key={b.id} studentId={learner.student.id} batch={b} level={level} payHref={`${base}/pembayaran`} />
             ))}
           </div>
         )}

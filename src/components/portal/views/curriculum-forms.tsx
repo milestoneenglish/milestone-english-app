@@ -19,6 +19,7 @@ import {
   updateCurriculumAction,
   updateModuleAction,
 } from "@/app/portal/learning-actions";
+import { ASSESSMENT_LABEL } from "@/lib/academic";
 import type { MaterialRow, ModuleRow, SubmissionType, TaskRow } from "@/lib/curriculum";
 import { createClient } from "@/lib/supabase/client";
 
@@ -29,7 +30,7 @@ const TYPE_OPTIONS: { value: SubmissionType; label: string }[] = [
   { value: "file", label: "File" },
 ];
 
-function ErrorText({ error }: { error: string }) {
+export function ErrorText({ error }: { error: string }) {
   return error ? (
     <p className="text-sm font-bold text-rose-300" role="alert">
       {error}
@@ -37,7 +38,7 @@ function ErrorText({ error }: { error: string }) {
   ) : null;
 }
 
-function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+export function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
     <label className="block">
       <span className="mb-2 block text-xs font-bold text-amber-100">{label}</span>
@@ -48,7 +49,7 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
 }
 
 // Menjalankan aksi server lalu memuat ulang halaman; mengembalikan pesan error bila gagal.
-function useAction() {
+export function useAction() {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [error, setError] = useState("");
@@ -63,8 +64,8 @@ function useAction() {
   return { pending, error, act, router };
 }
 
-const ghost = "rounded-full border border-orange/40 px-4 py-2 text-xs font-black text-orange hover:bg-orange/10 disabled:opacity-50";
-const danger = "rounded-full border border-rose-400/50 px-4 py-2 text-xs font-black text-rose-300 hover:bg-rose-500/10 disabled:opacity-50";
+export const ghost = "rounded-full border border-orange/40 px-4 py-2 text-xs font-black text-orange hover:bg-orange/10 disabled:opacity-50";
+export const danger = "rounded-full border border-rose-400/50 px-4 py-2 text-xs font-black text-rose-300 hover:bg-rose-500/10 disabled:opacity-50";
 
 export function CreateCurriculumButton({ programId }: { programId: string }) {
   const { pending, error, act, router } = useAction();
@@ -103,7 +104,7 @@ export function CurriculumActions({ id, status, hasDraft }: { id: string; status
       {confirm === "publish" && (
         <div className="space-y-3 rounded-xl border border-orange/30 bg-navy-dark/70 p-4">
           <p className="text-sm text-amber-100">
-            Setelah terbit, Admin bisa memakai kurikulum ini untuk membuka batch. Isi modul tetap bisa diubah, tetapi jumlah dan urutan sesi terkunci. Versi terbit sebelumnya diarsipkan dan tetap dipakai batch yang sudah memakainya.
+            Setelah terbit, Admin bisa memakai kurikulum ini untuk membuka batch. Isi modul dan teks rubrik tetap bisa diubah, tetapi jumlah dan urutan sesi, daftar indikator rubrik, serta titik assessment terkunci. Versi terbit sebelumnya diarsipkan dan tetap dipakai batch yang sudah memakainya.
           </p>
           <div className="flex gap-2">
             <button disabled={pending} onClick={() => act(() => publishCurriculumAction(id).then((r) => (r.ok && setConfirm(""), r)))} className="btn-orange rounded-full px-5 py-2.5 text-sm">
@@ -165,7 +166,7 @@ export function CurriculumMetaForm({ id, title, notes }: { id: string; title: st
   );
 }
 
-export function FileButton({ kind, id, label = "Buka" }: { kind: "material" | "submission"; id: string; label?: string }) {
+export function FileButton({ kind, id, label = "Buka" }: { kind: "material" | "submission" | "report"; id: string; label?: string }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState("");
   return (
@@ -358,7 +359,7 @@ function TaskEditor({ moduleId, task }: { moduleId: string; task: TaskRow | null
   );
 }
 
-export function ModuleEditor({ module, draft, isFirst, isLast }: { module: ModuleRow; draft: boolean; isFirst: boolean; isLast: boolean }) {
+export function ModuleEditor({ module, draft, isFirst, isLast, assessment }: { module: ModuleRow; draft: boolean; isFirst: boolean; isLast: boolean; assessment?: React.ReactNode }) {
   const { pending, error, act } = useAction();
   const [f, setF] = useState({ title: module.title, objectives: module.objectives, content: module.content, week: module.week });
   const [saved, setSaved] = useState(false);
@@ -372,12 +373,21 @@ export function ModuleEditor({ module, draft, isFirst, isLast }: { module: Modul
         <span>
           <span className="text-xs font-black text-amber-200/80">Sesi {module.seq}</span>
           <span className="ml-3 font-black text-white">{module.title}</span>
+          {module.assessment && (
+            <span className="ml-3 rounded-full border border-orange/50 bg-orange/15 px-2.5 py-0.5 text-[11px] font-black text-orange">Assessment {ASSESSMENT_LABEL[module.assessment].toLowerCase()}</span>
+          )}
         </span>
         <span className="text-xs text-amber-200/70">
           {module.materials.length} materi · {module.tasks.length} tugas <span className="ml-2 text-orange group-open:hidden">Ubah ▾</span>
         </span>
       </summary>
       <div className="space-y-5 border-t border-orange/15 px-5 py-5">
+        {assessment && (
+          <div className="flex flex-wrap items-center gap-3 rounded-xl border border-orange/20 p-3 text-xs text-amber-100">
+            <span className="font-bold">Titik assessment:</span>
+            {assessment}
+          </div>
+        )}
         <form
           className="space-y-4"
           onSubmit={(e) => {

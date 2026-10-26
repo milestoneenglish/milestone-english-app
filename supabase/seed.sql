@@ -112,40 +112,40 @@ with c as (
   where p.code = 'EZ' and not exists (select 1 from public.curricula x where x.program_id = p.id)
   returning id
 ), mods as (
-  insert into public.curriculum_modules (curriculum_id, seq, week, title, objectives, content)
-  select c.id, v.seq, v.week, v.title, v.objectives, v.content from c, (values
+  insert into public.curriculum_modules (curriculum_id, seq, week, title, objectives, content, assessment)
+  select c.id, v.seq, v.week, v.title, v.objectives, v.content, v.assessment from c, (values
   (1, 1, 'Hello! Greetings & introducing yourself', 'Siswa bisa menyapa, menyebut nama, asal, dan pekerjaan/sekolah dengan kalimat sederhana.', '• Sapaan formal dan santai: Hello, Hi, Good morning, Nice to meet you.
 • Pola: My name is…, I''m from…, I''m a/an…, I live in…
 • Alfabet dan mengeja nama (How do you spell it?).
-• Baseline: setiap siswa merekam perkenalan singkat sebagai pembanding di akhir program.'),
+• Baseline: setiap siswa merekam perkenalan singkat sebagai pembanding di akhir program.', 'baseline'),
   (2, 1, 'Numbers, age, and contact details', 'Siswa bisa menyebut angka 1–100, umur, nomor telepon, dan alamat email.', '• Angka 1–100 dan perbedaan thirteen/thirty.
 • How old are you? What''s your phone number? What''s your email address?
 • Simbol email: at, dot, underscore.
-• Latihan berpasangan: mengisi formulir pendaftaran lisan.'),
+• Latihan berpasangan: mengisi formulir pendaftaran lisan.', null),
   (3, 2, 'My family and the people around me', 'Siswa bisa memperkenalkan anggota keluarga dan menjelaskan hubungan dengan kata sederhana.', '• Kosakata keluarga: mother, father, brother, sister, husband, wife, son, daughter.
 • Possessive: my, your, his, her; ''s (Rina''s brother).
 • have/has: I have two sisters.
-• Kegiatan: menceritakan foto keluarga.'),
+• Kegiatan: menceritakan foto keluarga.', null),
   (4, 2, 'Daily routines', 'Siswa bisa menceritakan rutinitas harian memakai simple present dan keterangan waktu.', '• Kata kerja rutinitas: wake up, have breakfast, go to work, study, cook, sleep.
 • Simple present dan he/she + -s.
 • Jam dan keterangan waktu: at 7 o''clock, in the morning, every day.
-• Adverb of frequency: always, usually, sometimes, never.'),
+• Adverb of frequency: always, usually, sometimes, never.', 'mid'),
   (5, 3, 'Food, drinks, and likes', 'Siswa bisa menyatakan suka/tidak suka dan memesan makanan sederhana.', '• Kosakata makanan dan minuman sehari-hari.
 • I like…, I don''t like…, Do you like…?
 • Memesan: Can I have…, please? How much is it?
-• Cek tengah program: tutor mencatat kemajuan berbicara tiap siswa.'),
+• Cek tengah program: tutor mencatat kemajuan berbicara tiap siswa.', null),
   (6, 3, 'Places in town and directions', 'Siswa bisa menanyakan dan memberi petunjuk arah sederhana.', '• Tempat: bank, hospital, supermarket, station, mosque, school.
 • There is/There are; preposisi next to, opposite, between.
 • Arah: go straight, turn left/right, it''s on the left.
-• Role-play menanyakan jalan.'),
+• Role-play menanyakan jalan.', null),
   (7, 4, 'Asking questions and small talk', 'Siswa bisa memulai dan mempertahankan obrolan singkat dengan pertanyaan dasar.', '• Question words: what, where, when, who, how.
 • Pertanyaan umum untuk small talk: What do you do? Where do you live? What do you do on weekends?
 • Merespons dan bertanya balik: And you? Really? That''s nice!
-• Latihan percakapan 2–3 menit berpasangan.'),
+• Latihan percakapan 2–3 menit berpasangan.', null),
   (8, 4, 'Final: introduce yourself with confidence', 'Siswa menunjukkan perkenalan diri dan dialog dasar yang lebih lancar dibanding rekaman awal.', '• Review seluruh pola dari sesi 1–7.
 • Assessment akhir: perkenalan 1–2 menit dan dialog singkat dengan tutor, dinilai dengan rubrik yang sama seperti baseline.
-• Refleksi: apa yang sudah bisa dan target berikutnya.')
-  ) as v(seq, week, title, objectives, content)
+• Refleksi: apa yang sudah bisa dan target berikutnya.', 'final')
+  ) as v(seq, week, title, objectives, content, assessment)
   returning id, seq
 )
 insert into public.module_tasks (module_id, title, instructions, submission_type)
@@ -166,34 +166,34 @@ with c as (
   where p.code = 'SU' and not exists (select 1 from public.curricula x where x.program_id = p.id)
   returning id
 ), mods as (
-  insert into public.curriculum_modules (curriculum_id, seq, week, title, objectives, content)
-  select c.id, v.seq, v.week, v.title, v.objectives, v.content from c, (values
+  insert into public.curriculum_modules (curriculum_id, seq, week, title, objectives, content, assessment)
+  select c.id, v.seq, v.week, v.title, v.objectives, v.content, v.assessment from c, (values
   (1, 1, 'Breaking the ice', 'Siswa bisa membuka percakapan dengan orang baru dan menjaga obrolan tetap berjalan.', '• Pembuka percakapan sesuai situasi (kantor, acara, online).
 • Follow-up question: What made you…? How long have you…?
-• Baseline: percakapan 3 menit dengan tutor direkam sebagai pembanding.'),
+• Baseline: percakapan 3 menit dengan tutor direkam sebagai pembanding.', 'baseline'),
   (2, 1, 'Keeping the conversation going', 'Siswa bisa memakai follow-up question dan backchannel agar percakapan tidak terhenti.', '• Backchannel: Really? I see. That sounds…
 • Teknik ARE: Anchor, Reveal, Encourage.
-• Menghindari jawaban satu kata; menambah detail dengan because, so, and then.'),
+• Menghindari jawaban satu kata; menambah detail dengan because, so, and then.', null),
   (3, 2, 'Asking for clarification', 'Siswa bisa meminta pengulangan, penjelasan, dan mengecek pemahaman dengan sopan.', '• Sorry, could you say that again? What do you mean by…? Do you mean…?
 • Mengecek pemahaman: So you''re saying…?
-• Strategi saat tidak tahu kata: It''s a kind of…, It''s something you use to…'),
+• Strategi saat tidak tahu kata: It''s a kind of…, It''s something you use to…', null),
   (4, 2, 'Telling stories about the past', 'Siswa bisa menceritakan pengalaman masa lalu secara runtut.', '• Simple past (regular/irregular) dan past continuous untuk latar.
 • Penanda urutan: first, then, after that, finally.
-• Cek tengah program: tutor memberi catatan kelancaran dan akurasi.'),
+• Cek tengah program: tutor memberi catatan kelancaran dan akurasi.', 'mid'),
   (5, 3, 'Opinions and agreeing politely', 'Siswa bisa menyampaikan pendapat, setuju, dan tidak setuju dengan sopan.', '• I think…, In my opinion…, I''m not sure, but…
 • Setuju/tidak setuju: I see your point, but… I totally agree.
-• Memberi alasan dan contoh.'),
+• Memberi alasan dan contoh.', null),
   (6, 3, 'Making plans and invitations', 'Siswa bisa membuat, menerima, dan menolak ajakan serta menyusun rencana.', '• be going to dan present continuous untuk rencana.
 • Ajakan: Would you like to…? How about…? Let''s…
-• Menolak dengan sopan dan menawarkan alternatif.'),
+• Menolak dengan sopan dan menawarkan alternatif.', null),
   (7, 4, 'Handling difficult moments', 'Siswa bisa mengatasi jeda, lupa kata, dan mengalihkan topik dengan wajar.', '• Filler alami: Let me think…, Well…, How can I put it…
 • Parafrasa saat lupa kata.
 • Mengganti topik: By the way…, Speaking of…
-• Simulasi percakapan 5 menit.'),
+• Simulasi percakapan 5 menit.', null),
   (8, 4, 'Final conversation', 'Siswa mempertahankan percakapan 5 menit, bertanya balik, dan meminta klarifikasi.', '• Review strategi sesi 1–7.
 • Assessment akhir: percakapan 5 menit dengan tutor, dinilai dengan rubrik yang sama seperti baseline.
-• Refleksi dan rencana latihan mandiri.')
-  ) as v(seq, week, title, objectives, content)
+• Refleksi dan rencana latihan mandiri.', 'final')
+  ) as v(seq, week, title, objectives, content, assessment)
   returning id, seq
 )
 insert into public.module_tasks (module_id, title, instructions, submission_type)
@@ -214,20 +214,20 @@ with c as (
   where p.code = 'EC' and not exists (select 1 from public.curricula x where x.program_id = p.id)
   returning id
 ), mods as (
-  insert into public.curriculum_modules (curriculum_id, seq, week, title, objectives, content)
-  select c.id, v.seq, v.week, v.title, v.objectives, v.content from c, (values
+  insert into public.curriculum_modules (curriculum_id, seq, week, title, objectives, content, assessment)
+  select c.id, v.seq, v.week, v.title, v.objectives, v.content, v.assessment from c, (values
   (1, 1, 'Monthly kickoff: set your practice target', 'Siswa menentukan satu keterampilan fokus dan target praktik bulan ini.', '• Diskusi topik bulan ini dan pemanasan percakapan.
 • Menentukan target SMART (misalnya: bicara 3 menit tanpa jeda panjang).
-• Rekaman awal bulan sebagai pembanding.'),
+• Rekaman awal bulan sebagai pembanding.', 'baseline'),
   (2, 2, 'Discussion circle: current topics', 'Siswa berlatih berdiskusi dalam kelompok kecil tentang topik aktual.', '• Artikel/video pendek sebagai pemantik.
 • Peran dalam diskusi: memulai, menanggapi, merangkum.
-• Kosakata topik dan ungkapan diskusi.'),
+• Kosakata topik dan ungkapan diskusi.', null),
   (3, 3, 'Focus skill workshop', 'Siswa memperbaiki keterampilan fokus masing-masing dengan latihan terarah.', '• Klinik pengucapan, kosakata, atau grammar sesuai kebutuhan kelompok.
-• Koreksi langsung dari tutor dan latihan ulang.'),
+• Koreksi langsung dari tutor dan latihan ulang.', null),
   (4, 4, 'Monthly review', 'Siswa melihat kemajuan bulan ini dan menentukan target bulan berikutnya.', '• Rekaman akhir bulan dengan topik sebanding.
 • Review tutor berdasarkan log praktik dan rekaman.
-• Target bulan berikutnya.')
-  ) as v(seq, week, title, objectives, content)
+• Target bulan berikutnya.', 'final')
+  ) as v(seq, week, title, objectives, content, assessment)
   returning id, seq
 )
 insert into public.module_tasks (module_id, title, instructions, submission_type)
@@ -244,48 +244,48 @@ with c as (
   where p.code = 'SR' and not exists (select 1 from public.curricula x where x.program_id = p.id)
   returning id
 ), mods as (
-  insert into public.curriculum_modules (curriculum_id, seq, week, title, objectives, content)
-  select c.id, v.seq, v.week, v.title, v.objectives, v.content from c, (values
+  insert into public.curriculum_modules (curriculum_id, seq, week, title, objectives, content, assessment)
+  select c.id, v.seq, v.week, v.title, v.objectives, v.content, v.assessment from c, (values
   (1, 1, 'Diagnostic test & goal setting', 'Siswa mengetahui skor awal per bagian tes dan menetapkan target skor.', '• Simulasi diagnostik dengan format tes sasaran (TOEFL ITP/iBT atau IELTS).
 • Penjelasan struktur tes dan sistem skor.
-• Menetapkan target skor dan tanggal tes.'),
+• Menetapkan target skor dan tanggal tes.', 'baseline'),
   (2, 1, 'Reading: skimming and scanning', 'Siswa bisa menemukan ide pokok dan informasi spesifik dengan cepat.', '• Skimming judul, kalimat topik, dan kesimpulan.
 • Scanning kata kunci, angka, dan nama.
-• Manajemen waktu per teks.'),
+• Manajemen waktu per teks.', null),
   (3, 2, 'Reading: inference and vocabulary in context', 'Siswa bisa menjawab soal inferensi dan menebak makna kata dari konteks.', '• Tipe soal inference, purpose, dan reference.
 • Petunjuk konteks: definisi, contoh, kontras.
-• Analisis jawaban pengecoh.'),
+• Analisis jawaban pengecoh.', null),
   (4, 2, 'Listening: main ideas and details', 'Siswa bisa menangkap ide pokok dan detail penting dari percakapan dan kuliah singkat.', '• Prediksi isi dari soal.
 • Mencatat dengan singkatan dan simbol.
-• Sinyal transisi dalam kuliah.'),
+• Sinyal transisi dalam kuliah.', null),
   (5, 3, 'Listening: attitude, purpose, and connections', 'Siswa bisa memahami sikap pembicara dan hubungan antar informasi.', '• Intonasi dan ungkapan sikap.
 • Soal function: Why does the speaker say…?
-• Mengorganisasi informasi dalam tabel.'),
+• Mengorganisasi informasi dalam tabel.', null),
   (6, 3, 'Structure & grammar for the test', 'Siswa menguasai pola grammar yang paling sering diuji.', '• Subject-verb agreement, tenses, clauses, parallel structure.
-• Strategi menemukan kesalahan dengan cepat.'),
+• Strategi menemukan kesalahan dengan cepat.', null),
   (7, 4, 'Writing: task analysis and planning', 'Siswa bisa menganalisis soal writing dan menyusun kerangka dalam 5 menit.', '• Jenis soal writing pada tes sasaran.
 • Thesis statement dan topic sentence.
-• Kerangka paragraf PEEL.'),
+• Kerangka paragraf PEEL.', null),
   (8, 4, 'Writing: coherence and timed practice', 'Siswa menulis esai lengkap dalam batas waktu dengan alur yang runtut.', '• Kata penghubung dan kohesi.
 • Variasi kalimat.
-• Cek tengah program: simulasi writing berwaktu.'),
+• Cek tengah program: simulasi writing berwaktu.', 'mid'),
   (9, 5, 'Speaking: structuring quick answers', 'Siswa bisa menyusun jawaban speaking terstruktur dalam waktu persiapan singkat.', '• Template jawaban: point–reason–example–conclusion.
-• Memanfaatkan waktu persiapan 15–60 detik.'),
+• Memanfaatkan waktu persiapan 15–60 detik.', null),
   (10, 5, 'Speaking: integrated tasks', 'Siswa bisa merangkum bacaan/rekaman lalu menjawab secara lisan.', '• Mencatat poin kunci dari input.
-• Parafrasa dan menghubungkan informasi.'),
+• Parafrasa dan menghubungkan informasi.', null),
   (11, 6, 'Vocabulary for academic topics', 'Siswa memperluas kosakata akademik yang sering muncul.', '• Academic Word List dan kolokasi.
-• Word families dan sinonim untuk parafrasa.'),
+• Word families dan sinonim untuk parafrasa.', null),
   (12, 6, 'Full simulation 1', 'Siswa mengerjakan simulasi lengkap dengan kondisi mirip tes.', '• Simulasi penuh dengan waktu resmi.
-• Pembahasan per bagian.'),
+• Pembahasan per bagian.', null),
   (13, 7, 'Error clinic', 'Siswa memperbaiki pola kesalahan yang paling sering muncul.', '• Review kesalahan dari simulasi 1.
-• Latihan ulang terarah per siswa.'),
+• Latihan ulang terarah per siswa.', null),
   (14, 7, 'Time management & test-day strategy', 'Siswa punya strategi waktu dan kesiapan hari tes.', '• Alokasi waktu per bagian dan kapan melewati soal.
-• Persiapan teknis dan mental hari tes.'),
+• Persiapan teknis dan mental hari tes.', null),
   (15, 8, 'Full simulation 2', 'Siswa mengerjakan simulasi kedua sebagai latihan akhir.', '• Simulasi penuh dengan waktu resmi.
-• Pembahasan singkat dan fokus terakhir.'),
+• Pembahasan singkat dan fokus terakhir.', null),
   (16, 8, 'Final assessment & study plan', 'Siswa melihat perbandingan diagnostik awal dan simulasi akhir serta rencana belajar lanjutan.', '• Assessment akhir dengan format sebanding dengan diagnostik.
-• Perbandingan per bagian dan rekomendasi.')
-  ) as v(seq, week, title, objectives, content)
+• Perbandingan per bagian dan rekomendasi.', 'final')
+  ) as v(seq, week, title, objectives, content, assessment)
   returning id, seq
 )
 insert into public.module_tasks (module_id, title, instructions, submission_type)
@@ -314,30 +314,30 @@ with c as (
   where p.code = 'AW' and not exists (select 1 from public.curricula x where x.program_id = p.id)
   returning id
 ), mods as (
-  insert into public.curriculum_modules (curriculum_id, seq, week, title, objectives, content)
-  select c.id, v.seq, v.week, v.title, v.objectives, v.content from c, (values
+  insert into public.curriculum_modules (curriculum_id, seq, week, title, objectives, content, assessment)
+  select c.id, v.seq, v.week, v.title, v.objectives, v.content, v.assessment from c, (values
   (1, 1, 'Academic writing basics & diagnostic draft', 'Siswa memahami ciri tulisan akademik dan menulis draf diagnostik.', '• Perbedaan tulisan akademik dan populer: nada, struktur, bukti.
-• Menulis draf diagnostik 300–400 kata sebagai pembanding.'),
+• Menulis draf diagnostik 300–400 kata sebagai pembanding.', 'baseline'),
   (2, 2, 'Thesis statements and outlines', 'Siswa bisa merumuskan thesis yang jelas dan kerangka esai yang logis.', '• Thesis: posisi + alasan utama.
 • Kerangka: pendahuluan, isi, kesimpulan.
-• Menguji thesis: apakah bisa diperdebatkan dan spesifik?'),
+• Menguji thesis: apakah bisa diperdebatkan dan spesifik?', null),
   (3, 3, 'Paragraph development', 'Siswa bisa mengembangkan paragraf dengan topic sentence, bukti, dan analisis.', '• Struktur PEEL.
 • Jenis bukti: data, contoh, kutipan ahli.
-• Analisis: menjelaskan mengapa bukti mendukung klaim.'),
+• Analisis: menjelaskan mengapa bukti mendukung klaim.', null),
   (4, 3, 'Paraphrasing and summarizing', 'Siswa bisa memparafrasa dan meringkas sumber tanpa plagiarisme.', '• Teknik parafrasa: sinonim, ubah struktur, ubah kelas kata.
 • Ringkasan: ide pokok tanpa detail.
-• Cek tengah program: catatan tutor atas draf.'),
+• Cek tengah program: catatan tutor atas draf.', 'mid'),
   (5, 4, 'Citations and referencing', 'Siswa bisa mencantumkan sitasi dan daftar pustaka dengan gaya yang konsisten (APA 7).', '• Sitasi dalam teks: parenthetical dan narrative.
 • Daftar pustaka untuk jurnal, buku, dan situs web.
-• Alat bantu referensi dan pengecekan manual.'),
+• Alat bantu referensi dan pengecekan manual.', null),
   (6, 5, 'Cohesion, hedging, and academic style', 'Siswa bisa menulis dengan alur yang runtut dan gaya akademik yang tepat.', '• Transisi antarparagraf.
 • Hedging: may, suggests, it appears that.
-• Menghindari bahasa lisan dan generalisasi berlebihan.'),
+• Menghindari bahasa lisan dan generalisasi berlebihan.', null),
   (7, 6, 'Peer review and revision', 'Siswa bisa memberi dan menerima masukan, lalu merevisi secara terarah.', '• Checklist review: thesis, struktur, bukti, sitasi, bahasa.
-• Menyusun catatan revisi.'),
+• Menyusun catatan revisi.', null),
   (8, 6, 'Final essay submission & review', 'Siswa menyerahkan esai final 500–700 kata dengan sitasi, parafrasa, dan struktur yang valid.', '• Pengecekan akhir dan proofreading.
-• Assessment akhir: esai final dibandingkan draf diagnostik dengan rubrik yang sama.')
-  ) as v(seq, week, title, objectives, content)
+• Assessment akhir: esai final dibandingkan draf diagnostik dengan rubrik yang sama.', 'final')
+  ) as v(seq, week, title, objectives, content, assessment)
   returning id, seq
 )
 insert into public.module_tasks (module_id, title, instructions, submission_type)
@@ -358,26 +358,26 @@ with c as (
   where p.code = 'SS' and not exists (select 1 from public.curricula x where x.program_id = p.id)
   returning id
 ), mods as (
-  insert into public.curriculum_modules (curriculum_id, seq, week, title, objectives, content)
-  select c.id, v.seq, v.week, v.title, v.objectives, v.content from c, (values
+  insert into public.curriculum_modules (curriculum_id, seq, week, title, objectives, content, assessment)
+  select c.id, v.seq, v.week, v.title, v.objectives, v.content, v.assessment from c, (values
   (1, 1, 'Scholarship interviews: what panels look for', 'Siswa memahami kriteria panel dan merekam jawaban awal.', '• Kriteria umum: motivasi, kecocokan program, kontribusi, kesiapan.
-• Baseline: jawaban Tell me about yourself direkam sebagai pembanding.'),
+• Baseline: jawaban Tell me about yourself direkam sebagai pembanding.', 'baseline'),
   (2, 1, 'Telling your story', 'Siswa bisa menyusun narasi personal yang fokus dan meyakinkan.', '• Struktur Past–Present–Future.
-• Memilih pengalaman yang relevan dengan tujuan studi.'),
+• Memilih pengalaman yang relevan dengan tujuan studi.', null),
   (3, 2, 'Motivation and study plan', 'Siswa bisa menjelaskan alasan memilih program/kampus dan rencana studi.', '• Why this program? Why this university? Why now?
-• Menghubungkan rencana studi dengan tujuan karier.'),
+• Menghubungkan rencana studi dengan tujuan karier.', null),
   (4, 2, 'Contribution and impact', 'Siswa bisa menjelaskan kontribusi setelah studi secara konkret.', '• Rencana kontribusi jangka pendek dan panjang.
 • Memberi bukti kemampuan dari pengalaman sebelumnya.
-• Cek tengah program: mock interview singkat.'),
+• Cek tengah program: mock interview singkat.', 'mid'),
   (5, 3, 'STAR answers for behavioral questions', 'Siswa bisa menjawab pertanyaan perilaku dengan metode STAR.', '• Situation, Task, Action, Result.
-• Pertanyaan umum: leadership, failure, conflict, teamwork.'),
+• Pertanyaan umum: leadership, failure, conflict, teamwork.', null),
   (6, 3, 'Handling tough and unexpected questions', 'Siswa bisa merespons pertanyaan sulit dengan tenang dan terstruktur.', '• Membeli waktu dengan wajar: That''s an interesting question…
-• Menjawab kelemahan dengan jujur dan solutif.'),
+• Menjawab kelemahan dengan jujur dan solutif.', null),
   (7, 4, 'Delivery: voice, pace, and presence', 'Siswa bisa menyampaikan jawaban dengan intonasi, tempo, dan bahasa tubuh yang meyakinkan.', '• Intonasi untuk penekanan, jeda yang efektif.
-• Kontak mata dan postur di wawancara online.'),
+• Kontak mata dan postur di wawancara online.', null),
   (8, 4, 'Final mock interview', 'Siswa menjalani simulasi wawancara beasiswa lengkap.', '• Mock interview 10–15 menit dengan panel tutor.
-• Assessment akhir dengan rubrik yang sama seperti baseline.')
-  ) as v(seq, week, title, objectives, content)
+• Assessment akhir dengan rubrik yang sama seperti baseline.', 'final')
+  ) as v(seq, week, title, objectives, content, assessment)
   returning id, seq
 )
 insert into public.module_tasks (module_id, title, instructions, submission_type)
@@ -398,19 +398,19 @@ with c as (
   where p.code = 'LL' and not exists (select 1 from public.curricula x where x.program_id = p.id)
   returning id
 ), mods as (
-  insert into public.curriculum_modules (curriculum_id, seq, week, title, objectives, content)
-  select c.id, v.seq, v.week, v.title, v.objectives, v.content from c, (values
+  insert into public.curriculum_modules (curriculum_id, seq, week, title, objectives, content, assessment)
+  select c.id, v.seq, v.week, v.title, v.objectives, v.content, v.assessment from c, (values
   (1, 1, 'Reading like a critic', 'Siswa mengenal unsur cerita dan menulis tanggapan awal.', '• Unsur cerita: tokoh, latar, alur, konflik, tema.
 • Membaca cerpen pendek bersama dan diskusi.
-• Baseline: tanggapan tertulis singkat.'),
+• Baseline: tanggapan tertulis singkat.', 'baseline'),
   (2, 2, 'Characters and themes', 'Siswa bisa menganalisis tokoh dan tema dengan bukti dari teks.', '• Karakterisasi langsung dan tidak langsung.
 • Menemukan tema dan mendukungnya dengan kutipan.
-• Diskusi kelompok terekam.'),
+• Diskusi kelompok terekam.', null),
   (3, 3, 'Film and story comparison', 'Siswa bisa membandingkan versi cerita di buku dan film.', '• Kosakata ulasan: plot, pacing, cinematography, adaptation.
-• Membandingkan dan mengontraskan: whereas, similarly, on the other hand.'),
+• Membandingkan dan mengontraskan: whereas, similarly, on the other hand.', null),
   (4, 4, 'Writing a structured review', 'Siswa menyusun ulasan 200–300 kata yang terstruktur.', '• Struktur ulasan: pengantar, ringkasan tanpa spoiler, analisis, rekomendasi.
-• Assessment akhir: ulasan dibandingkan tanggapan awal.')
-  ) as v(seq, week, title, objectives, content)
+• Assessment akhir: ulasan dibandingkan tanggapan awal.', 'final')
+  ) as v(seq, week, title, objectives, content, assessment)
   returning id, seq
 )
 insert into public.module_tasks (module_id, title, instructions, submission_type)
@@ -427,29 +427,29 @@ with c as (
   where p.code = 'LIL' and not exists (select 1 from public.curricula x where x.program_id = p.id)
   returning id
 ), mods as (
-  insert into public.curriculum_modules (curriculum_id, seq, week, title, objectives, content)
-  select c.id, v.seq, v.week, v.title, v.objectives, v.content from c, (values
+  insert into public.curriculum_modules (curriculum_id, seq, week, title, objectives, content, assessment)
+  select c.id, v.seq, v.week, v.title, v.objectives, v.content, v.assessment from c, (values
   (1, 1, 'Hello, friends!', 'Anak bisa menyapa dan menyebut nama serta umur.', '• Lagu sapaan dan permainan nama.
 • Hello! What''s your name? I''m… How old are you? I''m seven.
-• Baseline: video singkat anak memperkenalkan diri.'),
+• Baseline: video singkat anak memperkenalkan diri.', 'baseline'),
   (2, 1, 'Colors and shapes', 'Anak bisa menyebut warna dan bentuk dasar.', '• red, blue, yellow, green; circle, square, triangle.
-• Permainan tunjuk dan sebut, mewarnai.'),
+• Permainan tunjuk dan sebut, mewarnai.', null),
   (3, 2, 'My family', 'Anak bisa memperkenalkan anggota keluarga.', '• mommy, daddy, brother, sister, grandma, grandpa.
 • This is my…
-• Menggambar keluarga.'),
+• Menggambar keluarga.', null),
   (4, 2, 'Animals', 'Anak mengenal hewan dan suaranya serta bisa berkata I like…', '• dog, cat, bird, fish, cow, chicken.
 • What''s this? It''s a… I like cats.
-• Permainan tebak suara hewan.'),
+• Permainan tebak suara hewan.', 'mid'),
   (5, 3, 'Food I like', 'Anak bisa menyebut makanan dan menyatakan suka/tidak suka.', '• apple, banana, rice, milk, bread, egg.
 • I like… I don''t like…
-• Cek tengah program: tutor mencatat kemajuan anak.'),
+• Cek tengah program: tutor mencatat kemajuan anak.', null),
   (6, 3, 'Toys and classroom things', 'Anak bisa menyebut mainan dan benda kelas serta jumlahnya.', '• ball, doll, car, book, pencil, bag.
-• Angka 1–10: I have two pencils.'),
+• Angka 1–10: I have two pencils.', null),
   (7, 4, 'Actions and instructions', 'Anak bisa mengikuti instruksi sederhana dari tutor.', '• stand up, sit down, jump, clap, touch your nose.
-• Permainan Simon Says.'),
+• Permainan Simon Says.', null),
   (8, 4, 'Show and tell', 'Anak memperkenalkan diri dan satu benda favorit di depan kelas.', '• Rangkuman kosakata sesi 1–7.
-• Assessment akhir: perkenalan dan show and tell dibandingkan video awal.')
-  ) as v(seq, week, title, objectives, content)
+• Assessment akhir: perkenalan dan show and tell dibandingkan video awal.', 'final')
+  ) as v(seq, week, title, objectives, content, assessment)
   returning id, seq
 )
 insert into public.module_tasks (module_id, title, instructions, submission_type)
@@ -470,25 +470,25 @@ with c as (
   where p.code = 'TT' and not exists (select 1 from public.curricula x where x.program_id = p.id)
   returning id
 ), mods as (
-  insert into public.curriculum_modules (curriculum_id, seq, week, title, objectives, content)
-  select c.id, v.seq, v.week, v.title, v.objectives, v.content from c, (values
+  insert into public.curriculum_modules (curriculum_id, seq, week, title, objectives, content, assessment)
+  select c.id, v.seq, v.week, v.title, v.objectives, v.content, v.assessment from c, (values
   (1, 1, 'Me in 60 seconds', 'Siswa bisa memperkenalkan diri dengan percaya diri selama 1 menit.', '• Struktur perkenalan menarik: hook, fakta tentang diri, hobi.
-• Baseline: rekaman perkenalan 1 menit.'),
+• Baseline: rekaman perkenalan 1 menit.', 'baseline'),
   (2, 1, 'Hobbies and interests', 'Siswa bisa membicarakan hobi dengan detail dan alasan.', '• Kosakata hobi dan frekuensi.
-• I''m into…, I''m good at…, because…'),
+• I''m into…, I''m good at…, because…', null),
   (3, 2, 'Opinions and reasons', 'Siswa bisa menyampaikan pendapat dengan alasan sederhana.', '• I think…, I believe…, because…, for example…
-• Debat ringan tentang topik remaja.'),
+• Debat ringan tentang topik remaja.', null),
   (4, 2, 'Planning a short presentation', 'Siswa bisa menyusun presentasi 3 menit dengan pembuka, isi, dan penutup.', '• Struktur presentasi dan signposting: First…, Next…, To sum up…
-• Cek tengah program: catatan tutor.'),
+• Cek tengah program: catatan tutor.', 'mid'),
   (5, 3, 'Using visuals', 'Siswa bisa membuat slide sederhana yang mendukung presentasi.', '• Prinsip slide: satu ide per slide, gambar, sedikit teks.
-• Menjelaskan gambar: As you can see…'),
+• Menjelaskan gambar: As you can see…', null),
   (6, 3, 'Voice and confidence', 'Siswa bisa berbicara dengan volume, tempo, dan kontak mata yang baik.', '• Latihan pernapasan dan tempo.
-• Mengatasi gugup.'),
+• Mengatasi gugup.', null),
   (7, 4, 'Answering questions', 'Siswa bisa merespons pertanyaan audiens dengan sederhana.', '• That''s a good question…, I think…, I''m not sure, but…
-• Latihan tanya jawab berpasangan.'),
+• Latihan tanya jawab berpasangan.', null),
   (8, 4, 'Final presentation day', 'Siswa menyampaikan presentasi 3 menit dan menjawab pertanyaan dengan percaya diri.', '• Presentasi final dan sesi tanya jawab.
-• Assessment akhir dibandingkan rekaman perkenalan awal.')
-  ) as v(seq, week, title, objectives, content)
+• Assessment akhir dibandingkan rekaman perkenalan awal.', 'final')
+  ) as v(seq, week, title, objectives, content, assessment)
   returning id, seq
 )
 insert into public.module_tasks (module_id, title, instructions, submission_type)
@@ -509,27 +509,27 @@ with c as (
   where p.code = 'EFC' and not exists (select 1 from public.curricula x where x.program_id = p.id)
   returning id
 ), mods as (
-  insert into public.curriculum_modules (curriculum_id, seq, week, title, objectives, content)
-  select c.id, v.seq, v.week, v.title, v.objectives, v.content from c, (values
+  insert into public.curriculum_modules (curriculum_id, seq, week, title, objectives, content, assessment)
+  select c.id, v.seq, v.week, v.title, v.objectives, v.content, v.assessment from c, (values
   (1, 1, 'Career goals and interview baseline', 'Siswa menentukan posisi sasaran dan merekam jawaban wawancara awal.', '• Memetakan posisi sasaran dan kompetensi yang dicari.
-• Baseline: jawaban Tell me about yourself direkam.'),
+• Baseline: jawaban Tell me about yourself direkam.', 'baseline'),
   (2, 1, 'CV and LinkedIn language', 'Siswa bisa menulis ringkasan profesional dan poin pengalaman dengan kata kerja aksi.', '• Action verbs: managed, improved, coordinated.
-• Menulis pencapaian dengan angka.'),
+• Menulis pencapaian dengan angka.', null),
   (3, 2, 'Tell me about yourself', 'Siswa menyusun jawaban perkenalan 60–90 detik yang relevan dengan posisi.', '• Formula Present–Past–Future.
-• Menyesuaikan jawaban dengan deskripsi pekerjaan.'),
+• Menyesuaikan jawaban dengan deskripsi pekerjaan.', null),
   (4, 2, 'Strengths, weaknesses, and motivation', 'Siswa bisa menjawab pertanyaan kekuatan, kelemahan, dan motivasi dengan jujur dan meyakinkan.', '• Menyebut kekuatan dengan bukti.
 • Kelemahan dan langkah perbaikan.
-• Cek tengah program: catatan tutor.'),
+• Cek tengah program: catatan tutor.', 'mid'),
   (5, 3, 'Behavioral questions with STAR', 'Siswa bisa menjawab pertanyaan perilaku dengan metode STAR.', '• Situation, Task, Action, Result.
-• Pertanyaan umum: conflict, deadline, teamwork.'),
+• Pertanyaan umum: conflict, deadline, teamwork.', null),
   (6, 3, 'Asking questions and salary talk', 'Siswa bisa mengajukan pertanyaan ke pewawancara dan membicarakan ekspektasi gaji dengan sopan.', '• Pertanyaan cerdas untuk pewawancara.
-• Ungkapan negosiasi: My expectation is in the range of…'),
+• Ungkapan negosiasi: My expectation is in the range of…', null),
   (7, 4, 'Online interview etiquette', 'Siswa siap mengikuti wawancara online secara profesional.', '• Persiapan teknis, latar, dan pencahayaan.
 • Pembukaan dan penutupan wawancara.
-• Email ucapan terima kasih.'),
+• Email ucapan terima kasih.', null),
   (8, 4, 'Final mock interview', 'Siswa menjalani simulasi wawancara kerja 10–15 menit untuk posisi sasaran.', '• Mock interview lengkap dengan tutor.
-• Assessment akhir dibandingkan jawaban awal.')
-  ) as v(seq, week, title, objectives, content)
+• Assessment akhir dibandingkan jawaban awal.', 'final')
+  ) as v(seq, week, title, objectives, content, assessment)
   returning id, seq
 )
 insert into public.module_tasks (module_id, title, instructions, submission_type)
@@ -550,26 +550,26 @@ with c as (
   where p.code = 'SE' and not exists (select 1 from public.curricula x where x.program_id = p.id)
   returning id
 ), mods as (
-  insert into public.curriculum_modules (curriculum_id, seq, week, title, objectives, content)
-  select c.id, v.seq, v.week, v.title, v.objectives, v.content from c, (values
+  insert into public.curriculum_modules (curriculum_id, seq, week, title, objectives, content, assessment)
+  select c.id, v.seq, v.week, v.title, v.objectives, v.content, v.assessment from c, (values
   (1, 1, 'Service mindset and greeting guests', 'Siswa bisa menyambut tamu/pelanggan dengan ramah dan profesional.', '• Sapaan layanan: Good morning, welcome to… How may I help you?
 • Nada suara dan bahasa tubuh.
-• Baseline: role-play penyambutan direkam.'),
+• Baseline: role-play penyambutan direkam.', 'baseline'),
   (2, 1, 'Hospitality: check-in and check-out', 'Siswa bisa melayani proses check-in dan check-out hotel.', '• Kosakata: reservation, ID, deposit, key card, invoice.
-• Alur percakapan check-in/out.'),
+• Alur percakapan check-in/out.', null),
   (3, 2, 'F&B: taking orders and recommendations', 'Siswa bisa mencatat pesanan dan memberi rekomendasi menu.', '• Are you ready to order? I''d recommend…, It comes with…
-• Menjelaskan bahan dan rasa.'),
+• Menjelaskan bahan dan rasa.', null),
   (4, 2, 'Giving information and directions', 'Siswa bisa memberi informasi fasilitas dan petunjuk arah dengan jelas.', '• Fasilitas, jam operasional, lokasi.
-• Cek tengah program: catatan tutor.'),
+• Cek tengah program: catatan tutor.', 'mid'),
   (5, 3, 'Handling complaints (LEARN)', 'Siswa bisa menangani keluhan dengan langkah Listen–Empathize–Apologize–Resolve–Notify.', '• Ungkapan empati dan permintaan maaf.
-• Menawarkan solusi dan tindak lanjut.'),
+• Menawarkan solusi dan tindak lanjut.', null),
   (6, 3, 'Phone and chat etiquette', 'Siswa bisa melayani telepon dan pesan chat dengan profesional.', '• Membuka/menutup telepon, menahan dan memindahkan panggilan.
-• Template balasan chat.'),
+• Template balasan chat.', null),
   (7, 4, 'Upselling and closing', 'Siswa bisa menawarkan produk tambahan dan menutup layanan dengan baik.', '• Would you like to upgrade…? We also have…
-• Penutup: Is there anything else I can help you with?'),
+• Penutup: Is there anything else I can help you with?', null),
   (8, 4, 'Final scenarios', 'Siswa menyelesaikan 4 skenario layanan: hospitality, F&B, informasi, dan keluhan.', '• Role-play skenario dengan checklist standar layanan.
-• Assessment akhir dibandingkan rekaman awal.')
-  ) as v(seq, week, title, objectives, content)
+• Assessment akhir dibandingkan rekaman awal.', 'final')
+  ) as v(seq, week, title, objectives, content, assessment)
   returning id, seq
 )
 insert into public.module_tasks (module_id, title, instructions, submission_type)
@@ -590,26 +590,26 @@ with c as (
   where p.code = 'SST' and not exists (select 1 from public.curricula x where x.program_id = p.id)
   returning id
 ), mods as (
-  insert into public.curriculum_modules (curriculum_id, seq, week, title, objectives, content)
-  select c.id, v.seq, v.week, v.title, v.objectives, v.content from c, (values
+  insert into public.curriculum_modules (curriculum_id, seq, week, title, objectives, content, assessment)
+  select c.id, v.seq, v.week, v.title, v.objectives, v.content, v.assessment from c, (values
   (1, 1, 'Presentation baseline', 'Siswa merekam presentasi singkat sebagai pembanding.', '• Kriteria presentasi bisnis yang efektif.
-• Baseline: presentasi 2 menit tentang pekerjaan atau proyek.'),
+• Baseline: presentasi 2 menit tentang pekerjaan atau proyek.', 'baseline'),
   (2, 1, 'Structuring your message', 'Siswa bisa menyusun pesan inti dengan struktur yang jelas.', '• Pyramid principle: pesan utama di awal.
-• Struktur problem–solution–benefit.'),
+• Struktur problem–solution–benefit.', null),
   (3, 2, 'Openings and closings', 'Siswa bisa membuka dan menutup presentasi dengan kuat.', '• Pembuka: pertanyaan, data, cerita singkat.
-• Penutup: ringkasan dan call to action.'),
+• Penutup: ringkasan dan call to action.', null),
   (4, 2, 'Describing data and visuals', 'Siswa bisa menjelaskan grafik dan data dengan tepat.', '• Kosakata tren: increase, decline, peak, remain stable.
 • As you can see…, This chart shows…
-• Cek tengah program: catatan tutor.'),
+• Cek tengah program: catatan tutor.', 'mid'),
   (5, 3, 'Delivery and body language', 'Siswa bisa menyampaikan presentasi dengan suara, jeda, dan bahasa tubuh yang meyakinkan.', '• Penekanan kata, jeda, tempo.
-• Gestur dan kontak mata (offline/online).'),
+• Gestur dan kontak mata (offline/online).', null),
   (6, 3, 'Handling Q&A and critical questions', 'Siswa bisa menjawab pertanyaan kritis dengan tenang dan terstruktur.', '• Teknik: acknowledge–answer–bridge.
-• Menjawab saat tidak tahu jawabannya.'),
+• Menjawab saat tidak tahu jawabannya.', null),
   (7, 4, 'Rehearsal with feedback', 'Siswa melakukan gladi presentasi lengkap dan memperbaikinya.', '• Gladi 5 menit di depan kelas.
-• Masukan tutor dan teman.'),
+• Masukan tutor dan teman.', null),
   (8, 4, 'Final presentation', 'Siswa menyampaikan presentasi bisnis 5 menit dan menjawab 2 pertanyaan kritis.', '• Presentasi final dan sesi tanya jawab.
-• Assessment akhir dibandingkan rekaman awal.')
-  ) as v(seq, week, title, objectives, content)
+• Assessment akhir dibandingkan rekaman awal.', 'final')
+  ) as v(seq, week, title, objectives, content, assessment)
   returning id, seq
 )
 insert into public.module_tasks (module_id, title, instructions, submission_type)
@@ -623,3 +623,137 @@ select mods.id, v.title, v.instructions, v.type from mods join (values
   (7, 'Slide final', 'Unggah slide final presentasimu (PDF).', 'file'),
   (8, 'Rekaman presentasi final', 'Unggah rekaman presentasi final 5 menit (audio atau video).', 'any')
 ) as v(seq, title, instructions, type) on v.seq = mods.seq;
+
+-- Draf rubrik per program; hanya untuk kurikulum yang belum punya indikator.
+insert into public.rubric_indicators (curriculum_id, seq, skill, label, descriptors)
+select c.id, v.seq, v.skill, v.label, v.descriptors::jsonb
+from public.curricula c join public.programs p on p.id = c.program_id, (values
+  (1, 'speaking', 'Memperkenalkan diri', '["Belum bisa memperkenalkan diri tanpa dibantu kata per kata.","Menyebut nama dan asal dengan pola hafalan, sering berhenti.","Memperkenalkan diri sekitar 1 menit dengan pola dasar, sesekali dibantu.","Memperkenalkan diri dengan lancar dan menambah detail (pekerjaan, hobi) tanpa bantuan."]'),
+  (2, 'speaking', 'Kelancaran', '["Banyak jeda panjang; ujaran satu-dua kata.","Kalimat pendek dengan jeda yang sering.","Kalimat sederhana yang tersambung dengan jeda wajar.","Berbicara mengalir dan jarang berhenti mencari kata."]'),
+  (3, 'speaking', 'Pengucapan', '["Sering sulit dipahami.","Bisa dipahami dengan usaha dari pendengar.","Umumnya jelas; kesalahan tidak mengganggu makna.","Jelas dan mudah dipahami sepanjang waktu."]'),
+  (4, 'speaking', 'Kosakata sehari-hari', '["Hanya beberapa kata lepas.","Kosakata dasar untuk topik diri sendiri, sering kehabisan kata.","Cukup untuk topik sehari-hari yang sudah dipelajari.","Memilih kata dengan tepat dan mulai memakai variasi."]'),
+  (5, 'listening', 'Memahami pertanyaan sederhana', '["Belum menangkap pertanyaan dasar walau diulang.","Menangkap pertanyaan setelah diulang atau diucapkan pelan.","Memahami pertanyaan sehari-hari pada kecepatan pelan.","Memahami dan langsung merespons pertanyaan sehari-hari."]'),
+  (6, 'grammar', 'Pola kalimat dasar', '["Belum memakai to be dan present simple.","Memakai pola dasar dengan banyak kesalahan.","To be dan present simple umumnya benar.","Pola dasar konsisten benar, termasuk kalimat tanya dan negatif."]')
+) as v(seq, skill, label, descriptors)
+where p.code = 'EZ' and not exists (select 1 from public.rubric_indicators r where r.curriculum_id = c.id);
+
+insert into public.rubric_indicators (curriculum_id, seq, skill, label, descriptors)
+select c.id, v.seq, v.skill, v.label, v.descriptors::jsonb
+from public.curricula c join public.programs p on p.id = c.program_id, (values
+  (1, 'speaking', 'Kelancaran', '["Banyak jeda panjang; ujaran satu-dua kata.","Kalimat pendek dengan jeda yang sering.","Kalimat sederhana yang tersambung dengan jeda wajar.","Berbicara mengalir dan jarang berhenti mencari kata."]'),
+  (2, 'speaking', 'Menjaga percakapan', '["Hanya menjawab singkat; percakapan berhenti tanpa bantuan.","Menjawab cukup panjang tetapi jarang bertanya balik.","Bertanya balik dan menambah informasi sehingga percakapan berlanjut.","Memimpin percakapan 5 menit secara alami dengan follow-up question."]'),
+  (3, 'listening', 'Memahami dan meminta klarifikasi', '["Sering salah tangkap dan diam saat tidak paham.","Meminta ulang dengan satu cara (Sorry?) saat tidak paham.","Memakai beberapa ungkapan klarifikasi dan memeriksa pemahaman.","Menangkap maksud lawan bicara dan menangani salah paham dengan luwes."]'),
+  (4, 'speaking', 'Kosakata dan ungkapan', '["Kosakata terbatas, banyak kata dalam bahasa Indonesia.","Cukup untuk topik akrab, sering berulang.","Variasi kosakata dan ungkapan percakapan yang sesuai situasi.","Memakai ungkapan alami dan parafrasa saat tidak tahu kata."]'),
+  (5, 'grammar', 'Ketepatan tata bahasa', '["Kesalahan dasar hampir di setiap kalimat dan mengaburkan makna.","Pola dasar mulai benar, kesalahan masih sering.","Pola yang dipelajari umumnya benar; kesalahan kecil tidak mengganggu.","Tata bahasa konsisten tepat, termasuk pola yang lebih kompleks."]')
+) as v(seq, skill, label, descriptors)
+where p.code = 'SU' and not exists (select 1 from public.rubric_indicators r where r.curriculum_id = c.id);
+
+insert into public.rubric_indicators (curriculum_id, seq, skill, label, descriptors)
+select c.id, v.seq, v.skill, v.label, v.descriptors::jsonb
+from public.curricula c join public.programs p on p.id = c.program_id, (values
+  (1, 'speaking', 'Kelancaran', '["Banyak jeda panjang; ujaran satu-dua kata.","Kalimat pendek dengan jeda yang sering.","Kalimat sederhana yang tersambung dengan jeda wajar.","Berbicara mengalir dan jarang berhenti mencari kata."]'),
+  (2, 'listening', 'Memahami lawan bicara', '["Sering kehilangan alur diskusi.","Menangkap gagasan utama bila diucapkan pelan.","Mengikuti diskusi kelompok pada kecepatan normal.","Menangkap detail dan maksud tersirat dalam diskusi."]'),
+  (3, 'speaking', 'Kosakata dan ungkapan', '["Kosakata terbatas untuk topik diskusi.","Cukup untuk topik akrab, sering berulang.","Variasi kosakata yang sesuai topik diskusi.","Memakai ungkapan alami dan istilah yang tepat."]'),
+  (4, 'grammar', 'Ketepatan tata bahasa', '["Kesalahan dasar hampir di setiap kalimat dan mengaburkan makna.","Pola dasar mulai benar, kesalahan masih sering.","Pola yang dipelajari umumnya benar; kesalahan kecil tidak mengganggu.","Tata bahasa konsisten tepat, termasuk pola yang lebih kompleks."]')
+) as v(seq, skill, label, descriptors)
+where p.code = 'EC' and not exists (select 1 from public.rubric_indicators r where r.curriculum_id = c.id);
+
+insert into public.rubric_indicators (curriculum_id, seq, skill, label, descriptors)
+select c.id, v.seq, v.skill, v.label, v.descriptors::jsonb
+from public.curricula c join public.programs p on p.id = c.program_id, (values
+  (1, 'reading', 'Reading: pemahaman teks akademik', '["Kesulitan menangkap gagasan utama teks akademik.","Menangkap gagasan utama, sering keliru pada detail dan inferensi.","Menjawab soal detail dan inferensi dengan cukup akurat.","Akurat dan efisien pada semua tipe soal reading."]'),
+  (2, 'listening', 'Listening: kuliah dan percakapan', '["Kehilangan alur pada audio panjang.","Menangkap topik, sering keliru pada detail.","Mencatat poin penting dan menjawab sebagian besar soal dengan benar.","Menangkap detail, sikap pembicara, dan struktur kuliah dengan konsisten."]'),
+  (3, 'writing', 'Writing: respons tugas', '["Respons tidak menjawab tugas atau terlalu pendek.","Menjawab tugas dengan struktur lemah dan dukungan terbatas.","Struktur jelas dengan alasan dan contoh yang cukup.","Argumen kuat, kohesif, dan selesai dalam batas waktu."]'),
+  (4, 'speaking', 'Speaking: respons terstruktur', '["Respons terputus-putus dan tidak menjawab pertanyaan.","Menjawab dengan struktur sederhana, banyak jeda.","Respons terstruktur dengan alasan dan contoh, jeda wajar.","Respons lancar, terorganisasi, dan memanfaatkan waktu dengan baik."]'),
+  (5, 'grammar', 'Rentang tata bahasa dan kosakata', '["Rentang terbatas dengan kesalahan yang mengganggu makna.","Pola umum benar, struktur kompleks masih sering salah.","Memakai struktur kompleks dan kosakata akademik dengan cukup tepat.","Rentang luas dan akurat; kesalahan jarang."]')
+) as v(seq, skill, label, descriptors)
+where p.code = 'SR' and not exists (select 1 from public.rubric_indicators r where r.curriculum_id = c.id);
+
+insert into public.rubric_indicators (curriculum_id, seq, skill, label, descriptors)
+select c.id, v.seq, v.skill, v.label, v.descriptors::jsonb
+from public.curricula c join public.programs p on p.id = c.program_id, (values
+  (1, 'writing', 'Struktur esai dan paragraf', '["Belum ada pembagian pendahuluan, isi, dan penutup yang jelas.","Struktur dasar ada, paragraf belum punya kalimat topik yang jelas.","Esai terstruktur dengan tesis dan kalimat topik di setiap paragraf.","Struktur rapi dengan transisi antarparagraf yang mulus."]'),
+  (2, 'writing', 'Argumen dan bukti', '["Klaim tanpa dukungan.","Klaim didukung contoh umum yang belum relevan.","Klaim didukung bukti relevan dan penjelasan yang memadai.","Argumen meyakinkan, menimbang pandangan lain, bukti kuat."]'),
+  (3, 'writing', 'Sitasi dan parafrasa', '["Menyalin sumber tanpa sitasi.","Ada sitasi, parafrasa masih terlalu dekat dengan teks asli.","Parafrasa dan sitasi umumnya tepat sesuai gaya yang dipakai.","Sitasi konsisten dan sumber terintegrasi dengan baik."]'),
+  (4, 'writing', 'Kosakata akademik', '["Bahasa lisan dan informal mendominasi.","Mulai memakai kosakata akademik, sering kurang tepat.","Kosakata akademik tepat untuk sebagian besar teks.","Pilihan kata presisi dan register akademik konsisten."]'),
+  (5, 'grammar', 'Ketepatan tata bahasa', '["Kesalahan dasar hampir di setiap kalimat dan mengaburkan makna.","Pola dasar mulai benar, kesalahan masih sering.","Pola yang dipelajari umumnya benar; kesalahan kecil tidak mengganggu.","Tata bahasa konsisten tepat, termasuk pola yang lebih kompleks."]')
+) as v(seq, skill, label, descriptors)
+where p.code = 'AW' and not exists (select 1 from public.rubric_indicators r where r.curriculum_id = c.id);
+
+insert into public.rubric_indicators (curriculum_id, seq, skill, label, descriptors)
+select c.id, v.seq, v.skill, v.label, v.descriptors::jsonb
+from public.curricula c join public.programs p on p.id = c.program_id, (values
+  (1, 'speaking', 'Struktur jawaban', '["Jawaban melompat-lompat tanpa poin yang jelas.","Ada poin utama, alur dan penutup belum jelas.","Jawaban terstruktur (poin, contoh, kaitan) untuk pertanyaan umum.","Jawaban ringkas dan terstruktur untuk semua jenis pertanyaan."]'),
+  (2, 'speaking', 'Isi: motivasi, rencana studi, kontribusi', '["Isi umum dan tidak spesifik.","Menyebut tujuan, belum dikaitkan dengan program dan pengalaman.","Motivasi dan rencana spesifik serta didukung pengalaman.","Cerita meyakinkan yang menghubungkan masa lalu, studi, dan kontribusi."]'),
+  (3, 'speaking', 'Kelancaran', '["Banyak jeda panjang; ujaran satu-dua kata.","Kalimat pendek dengan jeda yang sering.","Kalimat sederhana yang tersambung dengan jeda wajar.","Berbicara mengalir dan jarang berhenti mencari kata."]'),
+  (4, 'listening', 'Merespons pertanyaan panel', '["Sering salah menangkap pertanyaan.","Menangkap pertanyaan utama, kesulitan pada pertanyaan lanjutan.","Merespons pertanyaan lanjutan dengan relevan.","Menangani pertanyaan tak terduga dengan tenang dan tepat."]'),
+  (5, 'grammar', 'Ketepatan tata bahasa', '["Kesalahan dasar hampir di setiap kalimat dan mengaburkan makna.","Pola dasar mulai benar, kesalahan masih sering.","Pola yang dipelajari umumnya benar; kesalahan kecil tidak mengganggu.","Tata bahasa konsisten tepat, termasuk pola yang lebih kompleks."]')
+) as v(seq, skill, label, descriptors)
+where p.code = 'SS' and not exists (select 1 from public.rubric_indicators r where r.curriculum_id = c.id);
+
+insert into public.rubric_indicators (curriculum_id, seq, skill, label, descriptors)
+select c.id, v.seq, v.skill, v.label, v.descriptors::jsonb
+from public.curricula c join public.programs p on p.id = c.program_id, (values
+  (1, 'reading', 'Pemahaman teks', '["Belum menangkap alur dan tokoh utama.","Memahami alur dasar, sering melewatkan detail penting.","Memahami alur, tokoh, dan konflik dengan baik.","Menangkap detail dan makna tersirat dengan tepat."]'),
+  (2, 'reading', 'Analisis tema', '["Belum bisa menyebut tema.","Menyebut tema tanpa bukti dari teks.","Menjelaskan tema dengan bukti dari teks.","Menganalisis tema dan teknik pengarang secara mendalam."]'),
+  (3, 'speaking', 'Diskusi lisan', '["Jarang berbicara dalam diskusi.","Menyampaikan pendapat singkat saat ditanya.","Aktif menyampaikan pendapat dengan alasan.","Menanggapi teman dan mengembangkan diskusi."]'),
+  (4, 'writing', 'Ulasan tertulis', '["Ulasan berupa ringkasan cerita saja.","Ada pendapat, struktur belum jelas.","Ulasan 200–300 kata yang terstruktur dengan pendapat dan bukti.","Ulasan meyakinkan, terstruktur, dan bergaya personal."]'),
+  (5, 'grammar', 'Ketepatan tata bahasa', '["Kesalahan dasar hampir di setiap kalimat dan mengaburkan makna.","Pola dasar mulai benar, kesalahan masih sering.","Pola yang dipelajari umumnya benar; kesalahan kecil tidak mengganggu.","Tata bahasa konsisten tepat, termasuk pola yang lebih kompleks."]')
+) as v(seq, skill, label, descriptors)
+where p.code = 'LL' and not exists (select 1 from public.rubric_indicators r where r.curriculum_id = c.id);
+
+insert into public.rubric_indicators (curriculum_id, seq, skill, label, descriptors)
+select c.id, v.seq, v.skill, v.label, v.descriptors::jsonb
+from public.curricula c join public.programs p on p.id = c.program_id, (values
+  (1, 'speaking', 'Memperkenalkan diri', '["Belum mau atau belum bisa menyebut nama.","Menyebut nama dan umur dengan bantuan tutor.","Memperkenalkan diri (nama, umur, kesukaan) dengan sedikit bantuan.","Memperkenalkan diri sendiri dengan percaya diri tanpa bantuan."]'),
+  (2, 'speaking', 'Kosakata tematik', '["Mengenali sangat sedikit kata tema.","Mengenali kata tema bila melihat gambar.","Menyebut sebagian besar kata tema sendiri.","Memakai kata tema dalam kalimat pendek."]'),
+  (3, 'listening', 'Mengikuti instruksi', '["Belum mengikuti instruksi sederhana.","Mengikuti instruksi dengan contoh gerakan tutor.","Mengikuti instruksi satu langkah tanpa contoh.","Mengikuti instruksi dua langkah dengan tepat."]'),
+  (4, 'speaking', 'Pengucapan', '["Sering sulit dipahami.","Bisa dipahami dengan usaha dari pendengar.","Umumnya jelas; kesalahan tidak mengganggu makna.","Jelas dan mudah dipahami sepanjang waktu."]'),
+  (5, 'speaking', 'Partisipasi dan keberanian', '["Belum mau ikut berbicara.","Ikut bersama-sama, belum berani sendiri.","Menjawab sendiri saat ditanya.","Aktif dan berani mencoba tanpa diminta."]')
+) as v(seq, skill, label, descriptors)
+where p.code = 'LIL' and not exists (select 1 from public.rubric_indicators r where r.curriculum_id = c.id);
+
+insert into public.rubric_indicators (curriculum_id, seq, skill, label, descriptors)
+select c.id, v.seq, v.skill, v.label, v.descriptors::jsonb
+from public.curricula c join public.programs p on p.id = c.program_id, (values
+  (1, 'speaking', 'Struktur presentasi', '["Belum ada pembuka, isi, dan penutup.","Ada pembuka dan isi, penutup belum jelas.","Presentasi 3 menit dengan pembuka, isi, dan penutup yang jelas.","Alur menarik dengan hook dan penutup yang kuat."]'),
+  (2, 'speaking', 'Kelancaran dan kepercayaan diri', '["Membaca teks, suara pelan, sering berhenti.","Masih bergantung pada catatan, kontak mata terbatas.","Berbicara cukup lancar dengan kontak mata dan suara jelas.","Tampil percaya diri, ekspresif, dan lancar."]'),
+  (3, 'speaking', 'Kosakata', '["Kosakata sangat terbatas.","Cukup untuk topik akrab, sering berulang.","Kosakata bervariasi sesuai topik.","Pilihan kata tepat dan menarik."]'),
+  (4, 'listening', 'Merespons pertanyaan', '["Belum memahami pertanyaan penonton.","Menjawab singkat setelah pertanyaan diulang.","Memahami dan menjawab pertanyaan sederhana.","Menjawab pertanyaan dengan jelas dan menambah contoh."]'),
+  (5, 'grammar', 'Ketepatan tata bahasa', '["Kesalahan dasar hampir di setiap kalimat dan mengaburkan makna.","Pola dasar mulai benar, kesalahan masih sering.","Pola yang dipelajari umumnya benar; kesalahan kecil tidak mengganggu.","Tata bahasa konsisten tepat, termasuk pola yang lebih kompleks."]')
+) as v(seq, skill, label, descriptors)
+where p.code = 'TT' and not exists (select 1 from public.rubric_indicators r where r.curriculum_id = c.id);
+
+insert into public.rubric_indicators (curriculum_id, seq, skill, label, descriptors)
+select c.id, v.seq, v.skill, v.label, v.descriptors::jsonb
+from public.curricula c join public.programs p on p.id = c.program_id, (values
+  (1, 'speaking', 'Menjawab pertanyaan wawancara umum', '["Jawaban sangat singkat atau tidak relevan.","Jawaban relevan tetapi umum dan hafalan.","Jawaban relevan, spesifik, dan sesuai posisi sasaran.","Jawaban meyakinkan yang menonjolkan nilai diri untuk posisi tersebut."]'),
+  (2, 'speaking', 'Menceritakan pengalaman (STAR)', '["Belum bisa menceritakan pengalaman kerja atau organisasi.","Bercerita tanpa struktur; hasil tidak jelas.","Memakai situasi, tugas, tindakan, dan hasil dengan cukup jelas.","Cerita STAR ringkas dengan hasil yang terukur."]'),
+  (3, 'speaking', 'Kosakata profesional', '["Bahasa santai, istilah kerja sangat terbatas.","Beberapa istilah profesional, sering kurang tepat.","Kosakata profesional yang sesuai bidang.","Pilihan kata profesional yang presisi dan natural."]'),
+  (4, 'speaking', 'Kelancaran dan sikap profesional', '["Banyak jeda, gugup, sulit dipahami.","Cukup jelas, masih sering berhenti.","Lancar dengan nada dan sikap yang sopan.","Tenang, lancar, dan meyakinkan sepanjang wawancara."]'),
+  (5, 'listening', 'Memahami pertanyaan pewawancara', '["Sering salah menangkap pertanyaan.","Menangkap pertanyaan umum, kesulitan pada pertanyaan lanjutan.","Memahami pertanyaan lanjutan dan meminta klarifikasi bila perlu.","Menangkap maksud di balik pertanyaan dan menjawab tepat sasaran."]'),
+  (6, 'grammar', 'Ketepatan tata bahasa', '["Kesalahan dasar hampir di setiap kalimat dan mengaburkan makna.","Pola dasar mulai benar, kesalahan masih sering.","Pola yang dipelajari umumnya benar; kesalahan kecil tidak mengganggu.","Tata bahasa konsisten tepat, termasuk pola yang lebih kompleks."]')
+) as v(seq, skill, label, descriptors)
+where p.code = 'EFC' and not exists (select 1 from public.rubric_indicators r where r.curriculum_id = c.id);
+
+insert into public.rubric_indicators (curriculum_id, seq, skill, label, descriptors)
+select c.id, v.seq, v.skill, v.label, v.descriptors::jsonb
+from public.curricula c join public.programs p on p.id = c.program_id, (values
+  (1, 'speaking', 'Sapaan dan bahasa layanan', '["Belum memakai sapaan layanan standar.","Memakai sapaan hafalan, belum sesuai situasi.","Sapaan dan ungkapan layanan tepat untuk situasi umum.","Bahasa layanan natural dan disesuaikan dengan tamu."]'),
+  (2, 'speaking', 'Menangani permintaan dan keluhan', '["Belum bisa merespons permintaan atau keluhan.","Merespons permintaan sederhana, kesulitan pada keluhan.","Menangani permintaan dan keluhan dengan langkah yang tepat.","Menyelesaikan keluhan dengan empati dan solusi yang jelas."]'),
+  (3, 'speaking', 'Kesantunan dan nada', '["Nada datar atau kurang sopan.","Sopan, tetapi nada dan pilihan kata kaku.","Nada ramah dan bahasa sopan yang konsisten.","Nada hangat dan profesional dalam semua skenario."]'),
+  (4, 'listening', 'Memahami kebutuhan tamu', '["Sering salah menangkap permintaan tamu.","Menangkap permintaan sederhana setelah diulang.","Memahami permintaan dan mengonfirmasi detailnya.","Menangkap kebutuhan tersirat dan mengantisipasinya."]'),
+  (5, 'speaking', 'Kosakata layanan', '["Kosakata layanan sangat terbatas.","Kosakata dasar untuk satu bidang layanan.","Kosakata tepat untuk hospitality dan F&B.","Kosakata luas dan presisi di berbagai skenario."]')
+) as v(seq, skill, label, descriptors)
+where p.code = 'SE' and not exists (select 1 from public.rubric_indicators r where r.curriculum_id = c.id);
+
+insert into public.rubric_indicators (curriculum_id, seq, skill, label, descriptors)
+select c.id, v.seq, v.skill, v.label, v.descriptors::jsonb
+from public.curricula c join public.programs p on p.id = c.program_id, (values
+  (1, 'speaking', 'Struktur dan pesan utama', '["Pesan utama tidak jelas.","Ada pesan utama, alur belum runtut.","Presentasi runtut dengan pesan utama yang jelas.","Struktur kuat dengan pembuka dan penutup yang berkesan."]'),
+  (2, 'speaking', 'Penyampaian', '["Membaca slide, suara datar.","Bergantung pada catatan, tempo tidak stabil.","Lancar dengan tempo, jeda, dan penekanan yang baik.","Penyampaian meyakinkan dengan kendali suara dan bahasa tubuh."]'),
+  (3, 'speaking', 'Bahasa bisnis', '["Bahasa santai dan istilah terbatas.","Beberapa ungkapan bisnis, sering kurang tepat.","Ungkapan presentasi dan istilah bisnis yang tepat.","Bahasa bisnis presisi dan natural, termasuk saat menjelaskan data."]'),
+  (4, 'listening', 'Menjawab pertanyaan kritis', '["Kesulitan memahami pertanyaan audiens.","Menjawab singkat tanpa menanggapi inti pertanyaan.","Menjawab 2 pertanyaan kritis dengan relevan.","Menjawab pertanyaan sulit dengan tenang dan argumen yang kuat."]'),
+  (5, 'grammar', 'Ketepatan tata bahasa', '["Kesalahan dasar hampir di setiap kalimat dan mengaburkan makna.","Pola dasar mulai benar, kesalahan masih sering.","Pola yang dipelajari umumnya benar; kesalahan kecil tidak mengganggu.","Tata bahasa konsisten tepat, termasuk pola yang lebih kompleks."]')
+) as v(seq, skill, label, descriptors)
+where p.code = 'SST' and not exists (select 1 from public.rubric_indicators r where r.curriculum_id = c.id);

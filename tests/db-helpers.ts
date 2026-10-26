@@ -37,6 +37,9 @@ revoke insert, update, delete on public.curricula, public.curriculum_modules fro
 grant update (title, notes) on public.curricula to authenticated;
 grant update (title, objectives, content, week) on public.curriculum_modules to authenticated;
 revoke insert, update, delete on public.attendance, public.assignments, public.submissions, public.feedback from authenticated, anon;
+revoke insert, update, delete on public.rubric_indicators from authenticated, anon;
+grant update (label, descriptors) on public.rubric_indicators to authenticated;
+revoke insert, update, delete on public.assessments, public.reports from authenticated, anon;
 `;
 
 export async function createTestDb() {

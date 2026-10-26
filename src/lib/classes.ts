@@ -1,4 +1,5 @@
 import "server-only";
+import { overallReportLevel, type SkillLevels } from "@/lib/academic";
 import { notify, roleRecipients, studentRecipients } from "@/lib/notify";
 import { generateSessions, scheduleLabel } from "@/lib/schedule";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -141,13 +142,17 @@ export async function batchRoster(batchId: string): Promise<RosterRow[]> {
     .order("created_at");
   const rows = (data ?? []) as unknown as Omit<RosterRow, "level">[];
   if (!rows.length) return [];
-  const { data: attempts } = await admin
-    .from("placement_attempts")
-    .select("student_id, levels, published_at")
-    .in("student_id", rows.map((r) => r.student.id))
-    .eq("status", "published")
-    .order("published_at", { ascending: false });
-  return rows.map((r) => ({ ...r, level: (attempts?.find((a) => a.student_id === r.student.id)?.levels as { overall?: string } | undefined)?.overall ?? null }));
+  const ids = rows.map((r) => r.student.id);
+  const [{ data: attempts }, { data: reports }] = await Promise.all([
+    admin.from("placement_attempts").select("student_id, levels, published_at").in("student_id", ids).eq("status", "published").order("published_at", { ascending: false }),
+    admin.from("reports").select("student_id, levels, published_at").in("student_id", ids).eq("status", "published").order("published_at", { ascending: false }),
+  ]);
+  // Level terbaru: laporan program terakhir, atau hasil placement bila belum pernah selesai program.
+  return rows.map((r) => {
+    const report = reports?.find((x) => x.student_id === r.student.id);
+    const placement = (attempts?.find((a) => a.student_id === r.student.id)?.levels as { overall?: string } | undefined)?.overall ?? null;
+    return { ...r, level: report ? overallReportLevel(report.levels as SkillLevels) : placement };
+  });
 }
 
 export async function tutors(): Promise<{ id: string; name: string }[]> {

@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { Icon } from "@/components/icons";
+import { LeadReports, ProgressPage, ReportsPage, TutorAssessments, TutorReports } from "@/components/portal/views/academic-pages";
 import { AdminGuardians, AdminRegistrations } from "@/components/portal/views/admin";
 import { AdminBatches, AdminHome, AdminPayments, OwnerSettings, TutorClasses } from "@/components/portal/views/admin-classes";
 import { PaymentPage, ProgramPage } from "@/components/portal/views/classes";
@@ -25,6 +26,8 @@ const VIEWS: Partial<Record<Role, Record<string, (p: ViewProps) => Promise<React
     pembayaran: ({ viewer, params }) => PaymentPage({ viewer, role: "student", params }),
     jadwal: ({ viewer, params }) => SchedulePage({ viewer, role: "student", params }),
     materi: ({ viewer, params }) => MaterialsPage({ viewer, role: "student", params }),
+    progres: ({ viewer, params }) => ProgressPage({ viewer, role: "student", params }),
+    laporan: ({ viewer, params }) => ReportsPage({ viewer, role: "student", params }),
   },
   guardian: {
     "": ({ viewer, params }) => GuardianHome({ viewer, error: params.galat }),
@@ -33,11 +36,14 @@ const VIEWS: Partial<Record<Role, Record<string, (p: ViewProps) => Promise<React
     pembayaran: ({ viewer, params }) => PaymentPage({ viewer, role: "guardian", params }),
     jadwal: ({ viewer, params }) => SchedulePage({ viewer, role: "guardian", params }),
     materi: ({ viewer, params }) => MaterialsPage({ viewer, role: "guardian", params }),
+    progres: ({ viewer, params }) => ProgressPage({ viewer, role: "guardian", params }),
   },
   tutor: {
     "": ({ viewer }) => TutorHome({ viewer }),
     sesi: ({ viewer, params }) => TutorSessions({ viewer, params }),
     tugas: ({ viewer, params }) => TutorTasks({ viewer, params }),
+    assessment: ({ viewer, params }) => TutorAssessments({ viewer, params }),
+    laporan: ({ viewer, params }) => TutorReports({ viewer, params }),
     kelas: ({ viewer }) => TutorClasses({ viewer }),
     placement: ({ viewer, params }) => TutorPlacement({ viewer, params }),
   },
@@ -46,6 +52,7 @@ const VIEWS: Partial<Record<Role, Record<string, (p: ViewProps) => Promise<React
     kurikulum: ({ params }) => LeadCurriculum({ params }),
     placement: ({ viewer, params }) => LeadPlacement({ viewer, params }),
     "bank-soal": ({ params }) => QuestionBank({ params }),
+    laporan: ({ viewer, params }) => LeadReports({ viewer, params }),
   },
   admin: {
     "": ({ viewer }) => AdminHome({ viewer }),

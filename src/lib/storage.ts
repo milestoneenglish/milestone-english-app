@@ -1,7 +1,7 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-// Bucket privat untuk materi kurikulum dan file tugas. File hanya dibuka lewat signed URL
+// Bucket privat untuk materi kurikulum, file tugas, dan PDF laporan. File hanya dibuka lewat signed URL
 // setelah server memeriksa hak akses.
 
 const AUDIO: Record<string, string> = { "audio/mpeg": "mp3", "audio/mp4": "m4a", "audio/x-m4a": "m4a", "audio/wav": "wav", "audio/ogg": "ogg", "audio/webm": "webm" };
@@ -19,6 +19,7 @@ const DOCS: Record<string, string> = {
 export const BUCKETS = {
   materials: { name: "learning-materials", types: { ...DOCS, ...AUDIO }, maxBytes: 10 * 1024 * 1024 },
   submissions: { name: "assignment-files", types: { ...DOCS, ...AUDIO }, maxBytes: 10 * 1024 * 1024 },
+  reports: { name: "report-files", types: { "application/pdf": "pdf" }, maxBytes: 10 * 1024 * 1024 },
 } as const;
 
 export type BucketKey = keyof typeof BUCKETS;
@@ -54,6 +55,12 @@ export async function fileExists(bucket: BucketKey, path: string) {
 export async function signedDownload(bucket: BucketKey, path: string, download?: string) {
   const { data } = await createAdminClient().storage.from(BUCKETS[bucket].name).createSignedUrl(path, 600, download ? { download } : undefined);
   return data?.signedUrl ?? null;
+}
+
+export async function uploadFile(bucket: BucketKey, path: string, body: Buffer | Uint8Array, contentType: string) {
+  await ensureBucket(bucket);
+  const { error } = await createAdminClient().storage.from(BUCKETS[bucket].name).upload(path, body, { contentType, upsert: true });
+  return !error;
 }
 
 export async function removeFiles(bucket: BucketKey, paths: string[]) {

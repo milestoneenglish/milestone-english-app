@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
 import { releaseExpired } from "@/lib/classes";
 import { sendDueReminders } from "@/lib/learning";
+import { ensureReportPdfs, sendAcademicReminders } from "@/lib/reports";
 
 // Dijalankan Vercel Cron sekali sehari (vercel.json): melepas invoice kedaluwarsa, memperbarui
-// status batch, dan mengirim pengingat tugas H-1. Vercel menyertakan CRON_SECRET sebagai Bearer token.
+// status batch, mengirim pengingat tugas H-1, mengingatkan staf akademik atas assessment/laporan
+// yang lewat batas, dan membuat ulang PDF laporan yang sempat gagal. Vercel menyertakan
+// CRON_SECRET sebagai Bearer token.
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET;
@@ -13,5 +17,7 @@ export async function GET(request: Request) {
   }
   await releaseExpired();
   const reminders = await sendDueReminders();
-  return NextResponse.json({ ok: true, reminders });
+  const academic = await sendAcademicReminders();
+  const pdfs = await ensureReportPdfs();
+  return NextResponse.json({ ok: true, reminders, academic, pdfs });
 }

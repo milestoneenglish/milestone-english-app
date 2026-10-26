@@ -1,4 +1,5 @@
 import "server-only";
+import type { AssessmentKind, Indicator, Skill } from "@/lib/academic";
 import { ClassError, dbError } from "@/lib/classes";
 import { BUCKETS, fileExists, fileExtension, removeFiles, signedDownload, signedUpload } from "@/lib/storage";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -12,7 +13,18 @@ export const SUBMISSION_LABEL: Record<SubmissionType, string> = { text: "Teks", 
 
 export type MaterialRow = { id: string; module_id: string; kind: "file" | "link" | "audio"; title: string; url: string | null; file_path: string | null; mime: string | null; size_bytes: number | null };
 export type TaskRow = { id: string; module_id: string; title: string; instructions: string; submission_type: SubmissionType; sort_order: number };
-export type ModuleRow = { id: string; curriculum_id: string; seq: number; week: number; title: string; objectives: string; content: string; materials: MaterialRow[]; tasks: TaskRow[] };
+export type ModuleRow = {
+  id: string;
+  curriculum_id: string;
+  seq: number;
+  week: number;
+  title: string;
+  objectives: string;
+  content: string;
+  assessment: AssessmentKind | null;
+  materials: MaterialRow[];
+  tasks: TaskRow[];
+};
 export type CurriculumRow = {
   id: string;
   program_id: string;
@@ -52,7 +64,7 @@ export async function curriculumOverview() {
 
 async function modulesWithContent(moduleIds: string[] | null, curriculumId?: string): Promise<ModuleRow[]> {
   const admin = createAdminClient();
-  let q = admin.from("curriculum_modules").select("id, curriculum_id, seq, week, title, objectives, content").order("seq");
+  let q = admin.from("curriculum_modules").select("id, curriculum_id, seq, week, title, objectives, content, assessment").order("seq");
   if (curriculumId) q = q.eq("curriculum_id", curriculumId);
   if (moduleIds) q = q.in("id", moduleIds.length ? moduleIds : ["00000000-0000-0000-0000-000000000000"]);
   const { data: modules } = await q;
@@ -75,17 +87,27 @@ export async function getCurriculum(id: string) {
   const admin = createAdminClient();
   const { data } = await admin.from("curricula").select(`${CURRICULUM_COLUMNS}, program:programs(id, code, name, duration_label)`).eq("id", id).maybeSingle();
   if (!data) return null;
-  const [modules, { count }, { data: siblings }] = await Promise.all([
+  const [modules, indicators, { count }, { data: siblings }] = await Promise.all([
     modulesWithContent(null, id),
+    rubricOf([id]),
     admin.from("batches").select("id", { count: "exact", head: true }).eq("curriculum_id", id).neq("status", "cancelled"),
     admin.from("curricula").select("id, version, status").eq("program_id", data.program_id).order("version"),
   ]);
   return {
     curriculum: data as unknown as CurriculumRow & { program: { id: string; code: string; name: string; duration_label: string } },
     modules,
+    indicators,
     batches: count ?? 0,
     hasDraft: (siblings ?? []).some((s) => s.status === "draft"),
   };
+}
+
+// Indikator rubrik beberapa kurikulum, urut sesuai nomor.
+export async function rubricOf(curriculumIds: string[]): Promise<Indicator[]> {
+  const ids = curriculumIds.filter(Boolean);
+  if (!ids.length) return [];
+  const { data } = await createAdminClient().from("rubric_indicators").select("id, curriculum_id, seq, skill, label, descriptors").in("curriculum_id", ids).order("seq");
+  return (data ?? []) as Indicator[];
 }
 
 // Kurikulum terbit (termasuk arsip) untuk dipilih Admin saat membuka batch.
@@ -176,6 +198,33 @@ async function removeOrphans(paths: string[]) {
   const { data } = await createAdminClient().from("module_materials").select("file_path").in("file_path", unique);
   const used = new Set((data ?? []).map((r) => r.file_path));
   await removeFiles("materials", unique.filter((p) => !used.has(p)));
+}
+
+// ---------------------------------------------------------------------------
+// Rubrik dan titik assessment. Tambah/hapus indikator dan titik assessment hanya di draf;
+// nama dan penjelasan skor tetap bisa diperbaiki setelah terbit.
+// ---------------------------------------------------------------------------
+
+export const setModuleAssessment = (moduleId: string, kind: AssessmentKind | null) =>
+  rpc("set_module_assessment", { p_module: moduleId, p_kind: kind }, "Titik assessment gagal disimpan.");
+
+export async function addIndicator(curriculumId: string, skill: Skill, label: string) {
+  if (label.trim().length < 2) throw new ClassError("Tulis nama indikator.");
+  return (await rpc("add_rubric_indicator", { p_curriculum: curriculumId, p_skill: skill, p_label: label }, "Indikator gagal ditambahkan.")) as string;
+}
+
+export const deleteIndicator = (id: string) => rpc("delete_rubric_indicator", { p_id: id }, "Indikator gagal dihapus.");
+
+export async function updateIndicator(actorId: string, id: string, input: { label: string; descriptors: string[] }) {
+  const label = input.label.trim();
+  if (label.length < 2) throw new ClassError("Tulis nama indikator.");
+  if (input.descriptors.length !== 4) throw new ClassError("Isi penjelasan untuk skor 1 sampai 4.");
+  const descriptors = input.descriptors.map((d) => d.trim().slice(0, 300));
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("rubric_indicators").update({ label: label.slice(0, 120), descriptors }).eq("id", id).select("id");
+  if (error) dbError(error, "Indikator gagal disimpan.");
+  if (!data?.length) throw new ClassError("Indikator tidak ditemukan atau kamu tidak punya akses.");
+  await audit(actorId, "rubric_indicator_updated", "rubric_indicators", id);
 }
 
 // ---------------------------------------------------------------------------

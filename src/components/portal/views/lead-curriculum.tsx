@@ -3,6 +3,9 @@ import { curriculumOverview, getCurriculum, type CurriculumRow, type ModuleRow }
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Viewer } from "@/lib/session";
 import { Badge, EmptyState, formatDateTime, Notice, PageHeader, Panel } from "../ui";
+import { ASSESSMENT_LABEL } from "@/lib/academic";
+import { leadReports } from "@/lib/reports";
+import { AssessmentPointSelect, RubricEditor } from "./academic-forms";
 import { AddModuleForm, CreateCurriculumButton, CurriculumActions, CurriculumMetaForm, ModuleEditor } from "./curriculum-forms";
 import { QueueCard } from "./admin-classes";
 
@@ -25,8 +28,9 @@ export function byWeek<T extends { week: number }>(modules: T[]) {
 
 export async function LeadHome({ viewer }: { viewer: Viewer }) {
   const admin = createAdminClient();
-  const [overview, { count: placement }, { count: unassigned }] = await Promise.all([
+  const [overview, reports, { count: placement }, { count: unassigned }] = await Promise.all([
     curriculumOverview(),
+    leadReports(),
     admin.from("placement_attempts").select("id", { count: "exact", head: true }).eq("status", "reviewed"),
     admin.from("placement_attempts").select("id", { count: "exact", head: true }).eq("status", "awaiting_review").is("evaluator_id", null),
   ]);
@@ -36,7 +40,15 @@ export async function LeadHome({ viewer }: { viewer: Viewer }) {
   return (
     <div className="fade-in space-y-6">
       <PageHeader title={`Halo, ${firstName}!`} subtitle="Perlu tindakan hari ini." />
+      {reports.some((r) => r.overdue) && <Notice tone="red">{reports.filter((r) => r.overdue).length} laporan menunggu review lebih dari 2 hari.</Notice>}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <QueueCard
+          href="/portal/lead/laporan"
+          icon="report"
+          count={reports.filter((r) => r.status === "submitted").length}
+          title="Laporan siap terbit"
+          text="Tinjau laporan tutor, konfirmasi level, lalu terbitkan PDF-nya (≤2 hari)."
+        />
         <QueueCard href="/portal/lead/placement?tab=siap" icon="check" count={placement ?? 0} title="Placement siap terbit" text="Tinjau penilaian tutor lalu terbitkan ke siswa." />
         <QueueCard href="/portal/lead/placement" icon="users" count={unassigned ?? 0} title="Placement belum punya penilai" text="Tugaskan penilai agar hasil keluar ≤1×24 jam." />
         <QueueCard href="/portal/lead/kurikulum" icon="book" count={drafts.length} title="Kurikulum masih draf" text={`${withoutPublished} program belum punya kurikulum terbit, sehingga batch-nya belum bisa memakai modul.`} />
@@ -113,7 +125,8 @@ export async function LeadCurriculum({ params }: { params: Record<string, string
 async function CurriculumDetail({ id }: { id: string }) {
   const data = await getCurriculum(id);
   if (!data) return <EmptyState title="Kurikulum tidak ditemukan" />;
-  const { curriculum: c, modules, batches, hasDraft } = data;
+  const { curriculum: c, modules, indicators, batches, hasDraft } = data;
+  const points = (["baseline", "mid", "final"] as const).map((k) => ({ kind: k, module: modules.find((m) => m.assessment === k) }));
   const { data: siblings } = await createAdminClient().from("curricula").select("id, version, status").eq("program_id", c.program_id).order("version", { ascending: false });
   const draft = c.status === "draft";
   return (
@@ -156,12 +169,38 @@ async function CurriculumDetail({ id }: { id: string }) {
           <CurriculumMetaForm key={c.id} id={c.id} title={c.title} notes={c.notes} />
         </div>
       </Panel>
+      <Panel title={`Rubrik penilaian (${indicators.length} indikator)`}>
+        <p className="mb-4 text-sm text-amber-100">
+          Skor 1–4 per indikator dipakai tutor di assessment awal, tengah, dan akhir, lalu dibandingkan di laporan.
+          {draft ? " Tambah atau hapus indikator selama draf." : " Daftar indikator terkunci di versi terbit; nama dan penjelasan skor tetap bisa diperbaiki."}
+        </p>
+        <RubricEditor curriculumId={c.id} indicators={indicators} draft={draft} />
+        <div className="mt-5 border-t border-orange/15 pt-4">
+          <p className="mb-2 text-xs font-black uppercase tracking-[0.18em] text-amber-200/80">Titik assessment</p>
+          <ul className="grid gap-2 text-sm sm:grid-cols-3">
+            {points.map((p) => (
+              <li key={p.kind} className="lp-card-soft px-4 py-3">
+                <p className="text-[11px] font-bold text-amber-200/70">Assessment {ASSESSMENT_LABEL[p.kind].toLowerCase()}</p>
+                <p className="font-black text-white">{p.module ? `Sesi ${p.module.seq}` : p.kind === "mid" ? "Tidak dipakai" : "Belum ditandai"}</p>
+              </li>
+            ))}
+          </ul>
+          {draft && <p className="mt-2 text-xs text-amber-200/70">Ubah lewat pilihan Titik assessment di tiap sesi. Awal dan akhir wajib ditandai sebelum terbit.</p>}
+        </div>
+      </Panel>
       {modules.length === 0 && <EmptyState icon="book" title="Belum ada sesi" text="Tambahkan sesi pertama di bawah." />}
       {byWeek(modules).map(([week, list]) => (
         <section key={week} className="space-y-3">
           <h2 className="text-sm font-black uppercase tracking-[0.18em] text-amber-200/80">Minggu {week}</h2>
           {list.map((m: ModuleRow) => (
-            <ModuleEditor key={`${m.id}-${m.seq}-${m.week}`} module={m} draft={draft} isFirst={m.seq === 1} isLast={m.seq === modules.length} />
+            <ModuleEditor
+              key={`${m.id}-${m.seq}-${m.week}-${m.assessment}`}
+              module={m}
+              draft={draft}
+              isFirst={m.seq === 1}
+              isLast={m.seq === modules.length}
+              assessment={draft ? <AssessmentPointSelect key="titik" moduleId={m.id} value={m.assessment} /> : null}
+            />
           ))}
         </section>
       ))}

@@ -101,6 +101,16 @@ Aturan pembayaran: kursi dipegang 2x24 jam sejak invoice terbit. Lewat batas, in
 
 Aturan tugas: tenggat default sebelum sesi berikutnya; pengumpulan terlambat tetap diterima dengan tanda Terlambat; revisi maksimal 2 kali; feedback tutor tertulis dan bisa disimpan sebagai draf sebelum diterbitkan. Anak yang didaftarkan wali (tanpa akun sendiri) mengumpulkan tugas lewat akun wali yang sudah diverifikasi.
 
+## 9. Assessment, progres, dan laporan (Fase 4)
+
+1. Setiap kurikulum punya **rubrik** 4–6 indikator dengan skor 1–4 (draf untuk 12 program sudah terisi) dan **titik assessment**: awal di sesi pertama, tengah di sesi pertengahan (program lebih dari 4 sesi), akhir di sesi terakhir. Academic Lead bisa mengubah keduanya selama draf; setelah terbit daftar indikator dan titik assessment terkunci, sedangkan nama dan penjelasan skor tetap bisa diperbaiki.
+2. Tutor menilai setiap siswa di sesi assessment paling lambat **48 jam** setelah sesi. Siswa yang tidak hadir dinilai susulan sebelum titik assessment berikutnya. Nilai draf belum terlihat siswa; setelah terbit tampil di menu **Progres** siswa dan wali.
+3. Setelah assessment akhir terbit, tutor menyusun laporan (ringkasan nilai, kehadiran, dan tugas terisi otomatis) dan mengajukannya ke Academic Lead paling lambat **3 hari** setelah sesi terakhir. Lead meninjau dalam **2 hari**: mengonfirmasi level akhir lalu menerbitkan, atau mengembalikan dengan catatan.
+4. Saat terbit, PDF laporan dibuat dan disimpan di bucket privat `report-files`; siswa dan wali mendapat notifikasi, bisa mengunduh PDF, dan mengambil program berikutnya tanpa placement ulang (level diambil dari laporan terakhir).
+5. Jadwal harian juga mengingatkan tutor atas assessment/laporan yang lewat batas, mengingatkan Lead atas laporan yang menunggu lebih dari 2 hari, dan membuat ulang PDF yang sempat gagal.
+
+Tampilan PDF diatur di `src/lib/report-pdf.tsx`. Contohnya bisa dibuat tanpa database dengan `npm run report:sample` (hasil di folder `e2e-output/`).
+
 ## Perintah lain
 
 | Perintah | Fungsi |
@@ -111,5 +121,7 @@ Aturan tugas: tenggat default sebelum sesi berikutnya; pengumpulan terlambat tet
 | `npm run e2e:fase1` | Uji otomatis seluruh alur Fase 1 lewat browser (server dev harus berjalan); data uji dihapus otomatis |
 | `npm run e2e:fase2` | Uji otomatis alur Fase 2: batch, pilih kelas, bayar, verifikasi, onboarding, notifikasi; data uji dihapus dan rekening dikembalikan |
 | `npm run e2e:fase3` | Uji otomatis alur Fase 3: kurikulum, batch berkurikulum, absensi, tugas, revisi, feedback, mode baca saja; data uji dihapus dan kurikulum dikembalikan |
-| `npm run db:migrate` | Memasang migrasi baru, seed, dan bucket storage ke Supabase |
+| `npm run e2e:fase4` | Uji otomatis alur Fase 4: rubrik, assessment awal/tengah/akhir, progres, laporan, review Lead, PDF, program lanjutan; data uji dihapus dan kurikulum dikembalikan |
+| `npm run report:sample` | Membuat contoh PDF laporan dengan data contoh untuk meninjau tampilannya |
+| `npm run db:migrate` | Memasang migrasi baru, seed (termasuk draf rubrik), dan bucket storage ke Supabase |
 | `npm run seed:generate` | Membuat ulang `supabase/seed.sql` dari `src/data/catalog.ts` |

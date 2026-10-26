@@ -1,12 +1,16 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import type { AssessmentKind, Skill, SkillLevels } from "@/lib/academic";
+import { saveAssessment, type AssessmentInput } from "@/lib/assessment";
 import { ClassError } from "@/lib/classes";
 import {
+  addIndicator,
   addMaterial,
   addModule,
   createCurriculum,
   deleteCurriculumDraft,
+  deleteIndicator,
   deleteMaterial,
   deleteModule,
   deleteTask,
@@ -16,7 +20,9 @@ import {
   newCurriculumVersion,
   publishCurriculum,
   saveTask,
+  setModuleAssessment,
   updateCurriculumMeta,
+  updateIndicator,
   updateModule,
   type MaterialInput,
   type ModuleInput,
@@ -33,6 +39,7 @@ import {
   type AttendanceEntry,
   type SubmissionInput,
 } from "@/lib/learning";
+import { reportFileUrl, reviewReport, saveReport, type ReportInput } from "@/lib/reports";
 import { requireRole, requireViewer } from "@/lib/session";
 
 export type LearnResult<T = object> = ({ ok: true } & T) | { ok: false; error: string };
@@ -127,6 +134,26 @@ export async function deleteTaskAction(taskId: string) {
   return run(() => deleteTask(taskId).then(done));
 }
 
+export async function setModuleAssessmentAction(moduleId: string, kind: AssessmentKind | null) {
+  await lead();
+  return run(() => setModuleAssessment(moduleId, kind).then(done));
+}
+
+export async function addIndicatorAction(curriculumId: string, skill: Skill, label: string) {
+  await lead();
+  return run(async () => ({ id: await addIndicator(curriculumId, skill, label) }));
+}
+
+export async function updateIndicatorAction(id: string, input: { label: string; descriptors: string[] }) {
+  const viewer = await lead();
+  return run(() => updateIndicator(viewer.id, id, input).then(done));
+}
+
+export async function deleteIndicatorAction(id: string) {
+  await lead();
+  return run(() => deleteIndicator(id).then(done));
+}
+
 // ---------------------------------------------------------------------------
 // Tutor: absensi, tugas, feedback
 // ---------------------------------------------------------------------------
@@ -147,6 +174,25 @@ export async function saveFeedbackAction(submissionId: string, body: string, dec
 }
 
 // ---------------------------------------------------------------------------
+// Assessment dan laporan
+// ---------------------------------------------------------------------------
+
+export async function saveAssessmentAction(input: AssessmentInput) {
+  await requireRole("tutor");
+  return run(() => saveAssessment(input).then(done));
+}
+
+export async function saveReportAction(enrollmentId: string, input: ReportInput) {
+  await requireRole("tutor");
+  return run(() => saveReport(enrollmentId, input).then(done));
+}
+
+export async function reviewReportAction(reportId: string, publish: boolean, comment: string, levels: SkillLevels | null) {
+  await requireRole("lead", "owner");
+  return run(() => reviewReport(reportId, publish, comment, levels).then(done));
+}
+
+// ---------------------------------------------------------------------------
 // Siswa dan wali: kumpul tugas; semua pengguna: buka file sesuai hak akses
 // ---------------------------------------------------------------------------
 
@@ -160,8 +206,8 @@ export async function submitAssignmentAction(assignmentId: string, studentId: st
   return run(() => submitAssignment(assignmentId, studentId, input).then(done));
 }
 
-export async function fileUrlAction(kind: "material" | "submission", id: string) {
+export async function fileUrlAction(kind: "material" | "submission" | "report", id: string) {
   const viewer = await requireViewer();
-  const url = kind === "material" ? await materialFileUrl(viewer, id) : await submissionFileUrl(id);
+  const url = kind === "material" ? await materialFileUrl(viewer, id) : kind === "report" ? await reportFileUrl(id) : await submissionFileUrl(id);
   return url ? { ok: true as const, url } : { ok: false as const, error: "File tidak tersedia atau kamu tidak punya akses." };
 }

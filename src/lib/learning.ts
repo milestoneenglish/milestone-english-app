@@ -35,7 +35,7 @@ const SESSION_COLUMNS = "id, batch_id, seq, starts_at, duration_minutes, topic, 
 
 export const sessionEnd = (s: { starts_at: string; duration_minutes: number }) => Date.parse(s.starts_at) + s.duration_minutes * 60000;
 
-async function sessionsOf(batchIds: string[]): Promise<ClassSession[]> {
+export async function sessionsOf(batchIds: string[]): Promise<ClassSession[]> {
   if (!batchIds.length) return [];
   const { data } = await createAdminClient().from("class_sessions").select(SESSION_COLUMNS).in("batch_id", batchIds).order("starts_at");
   return (data ?? []) as ClassSession[];
@@ -125,7 +125,7 @@ export async function tutorSessions(tutorId: string): Promise<TutorSession[]> {
 
 export type RosterStudent = { student_id: string; full_name: string; enrollment_status: string; has_account: boolean };
 
-async function activeRoster(batchId: string): Promise<RosterStudent[]> {
+export async function activeRoster(batchId: string): Promise<RosterStudent[]> {
   const { data } = await createAdminClient()
     .from("enrollments")
     .select("status, student:students(id, full_name, user_id)")
