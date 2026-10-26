@@ -89,6 +89,23 @@ describe("pendaftaran akun", () => {
     const id = await createUser("tutor@contoh.id", {}, { provisioned: true });
     expect(await rolesOf(id)).toEqual([]);
   });
+
+  it("akun staf dengan password sementara ditandai wajib ganti password", async () => {
+    const id = await createUser("staf@contoh.id", {}, { provisioned: true, must_change_password: true });
+    const p = await db.query<{ must: boolean }>("select must_change_password as must from public.profiles where id = $1", [id]);
+    expect(p.rows[0].must).toBe(true);
+  });
+
+  it("pendaftar publik tidak bisa menandai dirinya lewat metadata", async () => {
+    const id = await createUser("publik@contoh.id", { must_change_password: true }, { must_change_password: true });
+    const p = await db.query<{ must: boolean }>("select must_change_password as must from public.profiles where id = $1", [id]);
+    expect(p.rows[0].must).toBe(false);
+  });
+
+  it("pengguna tidak bisa menghapus sendiri tanda wajib ganti password", async () => {
+    const id = await createUser("staf2@contoh.id", {}, { provisioned: true, must_change_password: true });
+    await expect(as(id, "update public.profiles set must_change_password = false where id = $1", [id])).rejects.toThrow(/permission denied/);
+  });
 });
 
 describe("role dan hak akses", () => {

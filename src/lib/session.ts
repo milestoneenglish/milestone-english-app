@@ -21,7 +21,7 @@ export const requireViewer = cache(async (): Promise<Viewer> => {
   if (!user) redirect("/masuk");
 
   const [{ data: profile }, { data: roleRows }] = await Promise.all([
-    supabase.from("profiles").select("full_name, email, status").eq("id", user.id).single(),
+    supabase.from("profiles").select("full_name, email, status, must_change_password").eq("id", user.id).single(),
     supabase.from("user_roles").select("role").eq("user_id", user.id),
   ]);
 
@@ -29,6 +29,9 @@ export const requireViewer = cache(async (): Promise<Viewer> => {
     await supabase.auth.signOut();
     redirect("/masuk?status=nonaktif");
   }
+
+  // Akun dengan password sementara harus membuat password pribadi dulu.
+  if (profile.must_change_password) redirect("/password-baru");
 
   const roles = ROLE_PRIORITY.filter((r) => (roleRows ?? []).some((row) => isRole(row.role) && row.role === r));
 
