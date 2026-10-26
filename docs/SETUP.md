@@ -91,6 +91,16 @@ Buka `http://localhost:3100`. Landing page sekarang membaca data dari Supabase (
 
 Aturan pembayaran: kursi dipegang 2x24 jam sejak invoice terbit. Lewat batas, invoice kedaluwarsa dan kursi kembali tersedia. Bila bukti ditolak, siswa mendapat waktu minimal 24 jam lagi untuk mengunggah ulang.
 
+## 8. Kurikulum, absensi, dan tugas (Fase 3)
+
+1. Masuk sebagai Academic Lead, buka **Kurikulum**. Draf kurikulum 12 program sudah terisi (satu sesi satu modul, masing-masing dengan tujuan, poin materi, dan satu template tugas). Tinjau, lengkapi materi (file, audio, atau link), lalu **Terbitkan**.
+2. Isi sesi, materi, dan tugas tetap bisa diubah setelah terbit dan langsung terlihat di batch yang memakainya. Untuk mengubah jumlah atau urutan sesi, pakai **Buat versi baru**; batch yang sudah berjalan tetap memakai versi lamanya.
+3. Admin memilih kurikulum saat membuat batch. Jumlah sesi batch mengikuti jumlah modul.
+4. Status batch berganti sendiri: **Berjalan** sejak sesi pertama dimulai, **Selesai** setelah sesi terakhir berakhir. Siswa di batch yang selesai bisa membaca materi dan feedback, tetapi tidak bisa mengumpulkan tugas lagi.
+5. Pengingat tugas H-1 dikirim oleh jadwal harian Vercel (`vercel.json`, pukul 08.00 WIB). Tambahkan `CRON_SECRET` (string acak panjang) di Environment Variables Vercel; tanpa itu jadwal ditolak.
+
+Aturan tugas: tenggat default sebelum sesi berikutnya; pengumpulan terlambat tetap diterima dengan tanda Terlambat; revisi maksimal 2 kali; feedback tutor tertulis dan bisa disimpan sebagai draf sebelum diterbitkan. Anak yang didaftarkan wali (tanpa akun sendiri) mengumpulkan tugas lewat akun wali yang sudah diverifikasi.
+
 ## Perintah lain
 
 | Perintah | Fungsi |
@@ -100,5 +110,6 @@ Aturan pembayaran: kursi dipegang 2x24 jam sejak invoice terbit. Lewat batas, in
 | `npm run setup:role -- email role "Nama"` | Memberi role staf (owner, admin, lead, tutor) ke akun, atau membuat akun staf dengan password sementara |
 | `npm run e2e:fase1` | Uji otomatis seluruh alur Fase 1 lewat browser (server dev harus berjalan); data uji dihapus otomatis |
 | `npm run e2e:fase2` | Uji otomatis alur Fase 2: batch, pilih kelas, bayar, verifikasi, onboarding, notifikasi; data uji dihapus dan rekening dikembalikan |
+| `npm run e2e:fase3` | Uji otomatis alur Fase 3: kurikulum, batch berkurikulum, absensi, tugas, revisi, feedback, mode baca saja; data uji dihapus dan kurikulum dikembalikan |
 | `npm run db:migrate` | Memasang migrasi baru, seed, dan bucket storage ke Supabase |
 | `npm run seed:generate` | Membuat ulang `supabase/seed.sql` dari `src/data/catalog.ts` |

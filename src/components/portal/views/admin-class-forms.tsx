@@ -7,6 +7,7 @@ import { generateSessions, parseDurationLabel, scheduleLabel, WEEKDAYS } from "@
 
 type Option = { id: string; name: string };
 export type ProgramOption = { id: string; name: string; capacity: number; duration_label: string };
+export type CurriculumOption = { id: string; program_id: string; version: number; status: "published" | "archived"; modules: number };
 
 function ErrorText({ error }: { error: string }) {
   return error ? (
@@ -28,19 +29,29 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
 
 const DATE_FMT = new Intl.DateTimeFormat("id-ID", { weekday: "short", day: "numeric", month: "short", timeZone: "Asia/Jakarta" });
 
-export function BatchCreateForm({ programs, tutors }: { programs: ProgramOption[]; tutors: Option[] }) {
+export function BatchCreateForm({ programs, tutors, curricula }: { programs: ProgramOption[]; tutors: Option[]; curricula: CurriculumOption[] }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [error, setError] = useState("");
-  const [f, setF] = useState({ programId: "", startDate: "", weekdays: [] as number[], time: "19:00", minutes: 60, sessions: 8, capacity: 6, tutorId: "", meetingUrl: "", status: "open" as "draft" | "open", notes: "" });
+  const [f, setF] = useState({ programId: "", startDate: "", weekdays: [] as number[], time: "19:00", minutes: 60, sessions: 8, capacity: 6, tutorId: "", curriculumId: "", meetingUrl: "", status: "open" as "draft" | "open", notes: "" });
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((x) => ({ ...x, [k]: v }));
 
   const preview = useMemo(() => generateSessions({ startDate: f.startDate, weekdays: f.weekdays, time: f.time, count: f.sessions }), [f.startDate, f.weekdays, f.time, f.sessions]);
 
+  const options = curricula.filter((c) => c.program_id === f.programId);
+  const chosen = curricula.find((c) => c.id === f.curriculumId);
+
+  // Kurikulum terbit program dipilih otomatis; jumlah sesi mengikuti jumlah modulnya.
   function pickProgram(id: string) {
     const p = programs.find((x) => x.id === id);
     const d = p ? parseDurationLabel(p.duration_label) : null;
-    setF((x) => ({ ...x, programId: id, capacity: p?.capacity ?? x.capacity, sessions: d?.sessions ?? x.sessions, minutes: d?.minutes ?? x.minutes }));
+    const c = curricula.find((x) => x.program_id === id && x.status === "published");
+    setF((x) => ({ ...x, programId: id, curriculumId: c?.id ?? "", capacity: p?.capacity ?? x.capacity, sessions: c?.modules ?? d?.sessions ?? x.sessions, minutes: d?.minutes ?? x.minutes }));
+  }
+
+  function pickCurriculum(id: string) {
+    const c = curricula.find((x) => x.id === id);
+    setF((x) => ({ ...x, curriculumId: id, sessions: c?.modules ?? x.sessions }));
   }
 
   const submit = () =>
@@ -74,6 +85,25 @@ export function BatchCreateForm({ programs, tutors }: { programs: ProgramOption[
           <input type="date" value={f.startDate} onChange={(e) => set("startDate", e.target.value)} className="field" required />
         </Field>
       </div>
+      {f.programId && (
+        <Field
+          label="Kurikulum"
+          hint={
+            options.length === 0
+              ? "Program ini belum punya kurikulum terbit. Batch tetap bisa dibuka; materi dan template tugas tidak tersedia untuk tutor."
+              : "Sesi ke-n memakai modul ke-n, jadi jumlah sesi mengikuti kurikulum."
+          }
+        >
+          <select value={f.curriculumId} onChange={(e) => pickCurriculum(e.target.value)} className="field">
+            <option value="">Tanpa kurikulum</option>
+            {options.map((c) => (
+              <option key={c.id} value={c.id}>
+                Versi {c.version} · {c.modules} sesi{c.status === "archived" ? " (versi lama)" : ""}
+              </option>
+            ))}
+          </select>
+        </Field>
+      )}
       <fieldset>
         <legend className="mb-2 text-xs font-bold text-amber-100">Hari kelas</legend>
         <div className="flex flex-wrap gap-2">
@@ -101,7 +131,7 @@ export function BatchCreateForm({ programs, tutors }: { programs: ProgramOption[
           <input type="number" min={15} max={240} value={f.minutes} onChange={(e) => set("minutes", Number(e.target.value))} className="field" />
         </Field>
         <Field label="Jumlah sesi">
-          <input type="number" min={1} max={200} value={f.sessions} onChange={(e) => set("sessions", Number(e.target.value))} className="field" />
+          <input type="number" min={1} max={200} value={f.sessions} disabled={Boolean(chosen)} onChange={(e) => set("sessions", Number(e.target.value))} className="field disabled:opacity-60" />
         </Field>
         <Field label="Kapasitas">
           <input type="number" min={1} max={30} value={f.capacity} onChange={(e) => set("capacity", Number(e.target.value))} className="field" />

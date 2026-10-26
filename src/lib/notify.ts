@@ -57,6 +57,29 @@ export const TEMPLATES = {
     lines: [`Kamu ditugaskan mengajar ${d.program}, batch ${d.batch}.`, `Mulai ${d.start}, jadwal ${d.schedule}.`],
     cta: { label: "Lihat kelas", path: "/portal/tutor/kelas" },
   }),
+  attendance_absent: (d: { name: string; session: string; program: string }): Message => ({
+    subject: `${d.name} tidak hadir di kelas ${d.program}`,
+    lines: [`${d.name} tercatat tidak hadir pada ${d.session} (${d.program}).`, "Bila ada kendala, balas pesan ini atau hubungi tutor lewat tim kami. Materi sesi tetap bisa dibaca di portal."],
+    cta: { label: "Lihat jadwal & kehadiran", path: "/portal" },
+  }),
+  assignment_published: (d: { title: string; program: string; due: string }): Message => ({
+    subject: `Tugas baru: ${d.title}`,
+    lines: [`Tutor menerbitkan tugas baru di kelas ${d.program}: ${d.title}.`, `Tenggat: ${d.due}.`],
+    cta: { label: "Kerjakan tugas", path: "/portal" },
+  }),
+  assignment_reminder: (d: { title: string; program: string; due: string }): Message => ({
+    subject: `Pengingat: tugas ${d.title} jatuh tempo ${d.due}`,
+    lines: [`Tugas ${d.title} (${d.program}) belum dikumpulkan.`, `Tenggatnya ${d.due}. Pengumpulan setelah tenggat tetap diterima dengan tanda terlambat.`],
+    cta: { label: "Kumpulkan tugas", path: "/portal" },
+  }),
+  feedback_published: (d: { title: string; decision: "accepted" | "revision" }): Message => ({
+    subject: d.decision === "revision" ? `Tugas ${d.title} perlu direvisi` : `Feedback tugas ${d.title} sudah terbit`,
+    lines: [
+      d.decision === "revision" ? `Tutor memberi feedback dan meminta revisi untuk tugas ${d.title}.` : `Tutor sudah memberi feedback untuk tugas ${d.title}. Tugas ini selesai.`,
+      "Baca feedback lengkapnya di portal.",
+    ],
+    cta: { label: "Baca feedback", path: "/portal" },
+  }),
 } as const;
 
 export type TemplateKey = keyof typeof TEMPLATES;
@@ -164,6 +187,12 @@ export async function studentRecipients(studentId: string) {
     admin.from("guardian_links").select("guardian_id").eq("student_id", studentId).neq("status", "rejected"),
   ]);
   return [s?.user_id, ...(links ?? []).map((l) => l.guardian_id)];
+}
+
+// Wali terverifikasi seorang anak (untuk kabar ketidakhadiran).
+export async function guardianRecipients(studentId: string) {
+  const { data } = await createAdminClient().from("guardian_links").select("guardian_id").eq("student_id", studentId).eq("status", "verified");
+  return (data ?? []).map((l) => l.guardian_id as string);
 }
 
 export async function roleRecipients(role: "admin" | "owner" | "lead") {

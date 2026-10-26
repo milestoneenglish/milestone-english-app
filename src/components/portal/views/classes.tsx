@@ -209,7 +209,7 @@ function childQuery(role: "student" | "guardian", studentId: string) {
   return role === "guardian" ? `?anak=${studentId}` : "";
 }
 
-function ChildTabs({ learners, active, base, section }: { learners: Learner[]; active: string; base: string; section: string }) {
+export function ChildTabs({ learners, active, base, section }: { learners: Learner[]; active: string; base: string; section: string }) {
   if (learners.length < 2) return null;
   return <Tabs active={active} tabs={learners.map((l) => ({ key: l.student.id, label: l.student.full_name, href: `${base}/${section}?anak=${l.student.id}` }))} />;
 }

@@ -14,6 +14,7 @@ import {
   type BatchRow,
 } from "@/lib/classes";
 import { formatRupiah } from "@/lib/content";
+import { publishedCurricula } from "@/lib/curriculum";
 import { emailConfigured, whatsappConfigured } from "@/lib/notify";
 import type { IconName } from "@/lib/roles";
 import type { Viewer } from "@/lib/session";
@@ -34,7 +35,7 @@ function BatchBadge({ status }: { status: BatchRow["status"] }) {
   return <Badge tone={BATCH_STATUS[status].tone}>{BATCH_STATUS[status].label}</Badge>;
 }
 
-function QueueCard({ href, icon, count, title, text }: { href: string; icon: IconName; count: number; title: string; text: string }) {
+export function QueueCard({ href, icon, count, title, text }: { href: string; icon: IconName; count: number; title: string; text: string }) {
   return (
     <Link href={href} className={`workspace-panel flex items-start gap-4 p-5 transition hover:border-orange/60 ${count ? "" : "opacity-70"}`}>
       <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${count ? "bg-orange text-navy" : "bg-orange/15 text-orange"}`}>
@@ -138,15 +139,16 @@ function BatchTable({ rows }: { rows: BatchRow[] }) {
 export async function AdminBatches({ params }: { params: Record<string, string | undefined> }) {
   if (params.id) return AdminBatchDetail({ id: params.id });
   if (params.baru) {
-    const [{ data: programs }, tutorList] = await Promise.all([
+    const [{ data: programs }, tutorList, curricula] = await Promise.all([
       createAdminClient().from("programs").select("id, name, capacity, duration_label").eq("status", "active").order("sort_order"),
       tutors(),
+      publishedCurricula(),
     ]);
     return (
       <div className="fade-in space-y-6">
         <PageHeader title="Buat batch baru" subtitle="Jadwal sesi dibuat otomatis dari hari dan jam yang dipilih (WIB)." action={<Link href="/portal/admin/batch" className="text-sm font-bold text-orange">← Kembali</Link>} />
         <Panel>
-          <BatchCreateForm programs={programs ?? []} tutors={tutorList} />
+          <BatchCreateForm programs={programs ?? []} tutors={tutorList} curricula={curricula} />
         </Panel>
       </div>
     );
@@ -187,8 +189,15 @@ export async function AdminBatches({ params }: { params: Record<string, string |
 async function AdminBatchDetail({ id }: { id: string }) {
   const batch = await getBatch(id);
   if (!batch) return <EmptyState title="Batch tidak ditemukan" />;
-  const [sessions, roster, tutorList] = await Promise.all([batchSessions(id), batchRoster(id), tutors()]);
   const admin = createAdminClient();
+  const [sessions, roster, tutorList, { data: curriculum }, { data: done }] = await Promise.all([
+    batchSessions(id),
+    batchRoster(id),
+    tutors(),
+    batch.curriculum_id ? admin.from("curricula").select("version, status").eq("id", batch.curriculum_id).maybeSingle() : Promise.resolve({ data: null }),
+    admin.from("class_sessions").select("id").eq("batch_id", id).not("attendance_done_at", "is", null),
+  ]);
+  const recorded = new Set((done ?? []).map((s) => s.id));
   const { data: published } = await admin.from("placement_attempts").select("student_id, students(full_name)").eq("status", "published").not("student_id", "is", null);
   const enrolled = new Set(roster.map((r) => r.student.id));
   const candidates = [...new Map((published ?? []).filter((a) => !enrolled.has(a.student_id!)).map((a) => [a.student_id!, (a.students as unknown as { full_name: string }).full_name])).entries()]
@@ -213,12 +222,19 @@ async function AdminBatchDetail({ id }: { id: string }) {
           <BatchEditForm batch={{ id: batch.id, tutorId: batch.tutor_id ?? "", meetingUrl: batch.meeting_url ?? "", capacity: batch.capacity, status: batch.status, notes: batch.notes }} tutors={tutorList} />
         </Panel>
         <Panel title={`Jadwal sesi (${sessions.length})`}>
+          <p className="mb-3 text-xs text-amber-200/80">
+            {curriculum ? `Kurikulum versi ${curriculum.version}${curriculum.status === "archived" ? " (versi lama)" : ""}` : "Tanpa kurikulum"}
+          </p>
           <ol className="max-h-96 space-y-1 overflow-y-auto pr-2 text-sm">
             {sessions.map((s) => (
               <li key={s.id} className="flex justify-between gap-3 border-b border-orange/10 py-2">
-                <span className="font-bold text-white">Sesi {s.seq}</span>
-                <span className="text-amber-100">
+                <span className="min-w-0">
+                  <span className="font-bold text-white">Sesi {s.seq}</span>
+                  {s.topic && <span className="block truncate text-xs text-amber-200/70">{s.topic}</span>}
+                </span>
+                <span className="shrink-0 text-right text-amber-100">
                   {formatDateTime(s.starts_at)} · {s.duration_minutes} mnt
+                  {recorded.has(s.id) && <span className="block text-[11px] font-bold text-emerald-300">Absensi terisi</span>}
                 </span>
               </li>
             ))}

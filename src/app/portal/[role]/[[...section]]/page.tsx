@@ -4,9 +4,12 @@ import { AdminGuardians, AdminRegistrations } from "@/components/portal/views/ad
 import { AdminBatches, AdminHome, AdminPayments, OwnerSettings, TutorClasses } from "@/components/portal/views/admin-classes";
 import { PaymentPage, ProgramPage } from "@/components/portal/views/classes";
 import { GuardianChildren, GuardianHome } from "@/components/portal/views/guardian";
+import { LeadCurriculum, LeadHome } from "@/components/portal/views/lead-curriculum";
 import { LeadPlacement, TutorPlacement } from "@/components/portal/views/placement-staff";
 import { QuestionBank } from "@/components/portal/views/question-bank";
 import { StudentHome, StudentPlacement } from "@/components/portal/views/student";
+import { MaterialsPage, SchedulePage } from "@/components/portal/views/student-learning";
+import { TutorHome, TutorSessions, TutorTasks } from "@/components/portal/views/tutor-learning";
 import { menuFor } from "@/lib/menu";
 import { isRole, ROLE_LABEL, ROLE_MENU, type Role } from "@/lib/roles";
 import { requireViewer, type Viewer } from "@/lib/session";
@@ -20,18 +23,27 @@ const VIEWS: Partial<Record<Role, Record<string, (p: ViewProps) => Promise<React
     placement: ({ viewer, params }) => StudentPlacement({ viewer, error: params.galat }),
     program: ({ viewer, params }) => ProgramPage({ viewer, role: "student", params }),
     pembayaran: ({ viewer, params }) => PaymentPage({ viewer, role: "student", params }),
+    jadwal: ({ viewer, params }) => SchedulePage({ viewer, role: "student", params }),
+    materi: ({ viewer, params }) => MaterialsPage({ viewer, role: "student", params }),
   },
   guardian: {
     "": ({ viewer, params }) => GuardianHome({ viewer, error: params.galat }),
     anak: ({ viewer, params }) => GuardianChildren({ viewer, error: params.galat }),
     program: ({ viewer, params }) => ProgramPage({ viewer, role: "guardian", params }),
     pembayaran: ({ viewer, params }) => PaymentPage({ viewer, role: "guardian", params }),
+    jadwal: ({ viewer, params }) => SchedulePage({ viewer, role: "guardian", params }),
+    materi: ({ viewer, params }) => MaterialsPage({ viewer, role: "guardian", params }),
   },
   tutor: {
+    "": ({ viewer }) => TutorHome({ viewer }),
+    sesi: ({ viewer, params }) => TutorSessions({ viewer, params }),
+    tugas: ({ viewer, params }) => TutorTasks({ viewer, params }),
     kelas: ({ viewer }) => TutorClasses({ viewer }),
     placement: ({ viewer, params }) => TutorPlacement({ viewer, params }),
   },
   lead: {
+    "": ({ viewer }) => LeadHome({ viewer }),
+    kurikulum: ({ params }) => LeadCurriculum({ params }),
     placement: ({ viewer, params }) => LeadPlacement({ viewer, params }),
     "bank-soal": ({ params }) => QuestionBank({ params }),
   },

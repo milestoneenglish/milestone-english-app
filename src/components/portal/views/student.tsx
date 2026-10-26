@@ -5,6 +5,7 @@ import { journeyStage, JourneyStepper, NextStepCard, PlacementResult } from "../
 import { goalLabel } from "@/lib/placement/levels";
 import { studentEnrollments } from "@/lib/classes";
 import { ClassStep, currentEnrollment } from "./classes";
+import { WeekPanel } from "./student-learning";
 
 const STATUS_LABEL: Record<string, { label: string; tone: "orange" | "green" | "amber" | "slate" }> = {
   in_progress: { label: "Belum dikirim", tone: "amber" },
@@ -47,6 +48,7 @@ export async function StudentHome({ viewer, error }: { viewer: Viewer; error?: s
       <Panel>
         <NextStepCard attempt={attempt} studentId={student.id} returnTo="/portal/student" classStep={classStep} />
       </Panel>
+      {current?.status === "active" && <WeekPanel studentId={student.id} role="student" />}
       {published && stage === 2 && (
         <Panel title="Hasil placement test">
           <PlacementResult attempt={published} programs={programs} />

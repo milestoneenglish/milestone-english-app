@@ -7,6 +7,7 @@ import { Badge, EmptyState, Notice, PageHeader, Panel } from "../ui";
 import { AddChildForm } from "./add-child-form";
 import { ClassStep, currentEnrollment } from "./classes";
 import { PlacementStatusBadge } from "./student";
+import { WeekPanel } from "./student-learning";
 
 const RELATION: Record<string, string> = { orang_tua: "Orang tua", wali: "Wali", lainnya: "Lainnya" };
 
@@ -46,6 +47,11 @@ export async function GuardianHome({ viewer, error }: { viewer: Viewer; error?: 
           <div className="mt-6 border-t border-orange/15 pt-5">
             <NextStepCard attempt={attempt} studentId={student.id} returnTo="/portal/guardian" who={student.full_name} classStep={classStep} />
           </div>
+          {current?.status === "active" && (
+            <div className="mt-6">
+              <WeekPanel studentId={student.id} role="guardian" />
+            </div>
+          )}
           {attempt?.status === "published" && stage === 2 && (
             <div className="mt-6 border-t border-orange/15 pt-5">
               <PlacementResult attempt={attempt} programs={programs} />

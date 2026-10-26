@@ -33,6 +33,10 @@ grant update (full_name, birth_year, learning_goal, interested_program_id) on pu
 revoke update on public.guardian_links from authenticated;
 grant update (status, decided_by, decided_at) on public.guardian_links to authenticated;
 revoke insert, update, delete on public.enrollments, public.invoices, public.payment_proofs, public.notifications from authenticated, anon;
+revoke insert, update, delete on public.curricula, public.curriculum_modules from authenticated, anon;
+grant update (title, notes) on public.curricula to authenticated;
+grant update (title, objectives, content, week) on public.curriculum_modules to authenticated;
+revoke insert, update, delete on public.attendance, public.assignments, public.submissions, public.feedback from authenticated, anon;
 `;
 
 export async function createTestDb() {

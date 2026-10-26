@@ -51,15 +51,33 @@ try {
   await sql.end();
 }
 
-// Bucket storage privat untuk rekaman placement, media soal, dan bukti bayar.
+// Bucket storage privat untuk rekaman placement, media soal, bukti bayar, materi kurikulum, dan file tugas.
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const LEARNING_TYPES = [
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-powerpoint",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "audio/mpeg",
+  "audio/mp4",
+  "audio/x-m4a",
+  "audio/wav",
+  "audio/ogg",
+  "audio/webm",
+];
 if (url && serviceKey) {
   const admin = createClient(url, serviceKey, { auth: { persistSession: false } });
   const buckets = [
     { name: "placement-answers", options: { public: false, fileSizeLimit: "10MB", allowedMimeTypes: ["audio/webm", "audio/ogg", "audio/mp4", "audio/mpeg", "audio/wav"] } },
     { name: "placement-media", options: { public: false, fileSizeLimit: "20MB", allowedMimeTypes: ["audio/mpeg", "audio/mp4", "audio/wav", "audio/webm", "audio/ogg"] } },
     { name: "payment-proofs", options: { public: false, fileSizeLimit: "5MB", allowedMimeTypes: ["image/jpeg", "image/png", "image/webp", "application/pdf"] } },
+    { name: "learning-materials", options: { public: false, fileSizeLimit: "10MB", allowedMimeTypes: LEARNING_TYPES } },
+    { name: "assignment-files", options: { public: false, fileSizeLimit: "10MB", allowedMimeTypes: LEARNING_TYPES } },
   ];
   const { data: existing } = await admin.storage.listBuckets();
   for (const b of buckets) {

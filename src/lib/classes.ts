@@ -21,7 +21,7 @@ export const longDate = (date: string) => DATE_FMT.format(new Date(`${date}T00:0
 const shortDateTime = (iso: string) => `${DATETIME_FMT.format(new Date(iso))} WIB`;
 
 // Pesan dari fungsi database sudah berbahasa Indonesia dan aman ditampilkan.
-function dbError(error: { code?: string; message: string } | null, fallback: string): never {
+export function dbError(error: { code?: string; message: string } | null, fallback: string): never {
   if (error && ["42501", "22023", "23505"].includes(error.code ?? "")) throw new ClassError(error.message);
   if (error) console.error(error);
   throw new ClassError(fallback);
@@ -68,6 +68,7 @@ export type BatchRow = {
   code: string;
   program_id: string;
   tutor_id: string | null;
+  curriculum_id: string | null;
   start_date: string;
   schedule_label: string;
   meeting_url: string | null;
@@ -82,7 +83,7 @@ export type BatchRow = {
 };
 
 const BATCH_SELECT =
-  "id, code, program_id, tutor_id, start_date, schedule_label, meeting_url, capacity, status, notes, program:programs(id, code, slug, name, category, price_idr, duration_label, outcome, entry_level, capacity), tutor:profiles!batches_tutor_id_fkey(full_name, email), class_sessions(starts_at)";
+  "id, code, program_id, tutor_id, curriculum_id, start_date, schedule_label, meeting_url, capacity, status, notes, program:programs(id, code, slug, name, category, price_idr, duration_label, outcome, entry_level, capacity), tutor:profiles!batches_tutor_id_fkey(full_name, email), class_sessions(starts_at)";
 
 type RawBatch = Omit<BatchRow, "seats_taken" | "first_session" | "session_count"> & { class_sessions: { starts_at: string }[] };
 
@@ -99,11 +100,14 @@ async function withSeats(rows: RawBatch[]): Promise<BatchRow[]> {
   });
 }
 
+// Pembaruan status yang dihitung saat data dibaca: invoice kedaluwarsa dan status batch sesuai jadwal.
 export async function releaseExpired() {
-  await createAdminClient().rpc("release_expired_invoices");
+  const admin = createAdminClient();
+  await Promise.all([admin.rpc("release_expired_invoices"), admin.rpc("sync_batch_status")]);
 }
 
 export async function listBatches(filter: { status?: string[]; tutorId?: string; programIds?: string[] } = {}): Promise<BatchRow[]> {
+  await releaseExpired();
   let q = createAdminClient().from("batches").select(BATCH_SELECT).order("start_date", { ascending: true });
   if (filter.status) q = q.in("status", filter.status);
   if (filter.tutorId) q = q.eq("tutor_id", filter.tutorId);
@@ -164,6 +168,7 @@ export type BatchInput = {
   sessions: number;
   capacity: number;
   tutorId: string;
+  curriculumId: string;
   meetingUrl: string;
   status: "draft" | "open";
   notes: string;
@@ -193,6 +198,15 @@ export async function createBatch(actorId: string, input: BatchInput): Promise<s
   const sessions = generateSessions({ startDate: input.startDate, weekdays: input.weekdays, time: input.time, count: input.sessions });
   if (!sessions.length) throw new ClassError("Lengkapi tanggal mulai, hari, jam, dan jumlah sesi.");
   if (input.tutorId && !(await tutors()).some((t) => t.id === input.tutorId)) throw new ClassError("Tutor tidak valid.");
+  // Dengan kurikulum, sesi ke-n memakai modul ke-n, sehingga jumlah sesi harus sama dengan jumlah modul.
+  let modules: { id: string; seq: number; title: string }[] = [];
+  if (input.curriculumId) {
+    const { data: c } = await admin.from("curricula").select("id, program_id, status").eq("id", input.curriculumId).maybeSingle();
+    if (!c || c.program_id !== program.id || c.status === "draft") throw new ClassError("Pilih kurikulum terbit untuk program ini.");
+    const { data: mods } = await admin.from("curriculum_modules").select("id, seq, title").eq("curriculum_id", c.id).order("seq");
+    modules = mods ?? [];
+    if (modules.length !== sessions.length) throw new ClassError(`Kurikulum ini berisi ${modules.length} sesi. Samakan jumlah sesi batch.`);
+  }
 
   const supabase = await createClient();
   const code = await nextBatchCode(program.code, sessions[0].date);
@@ -203,6 +217,7 @@ export async function createBatch(actorId: string, input: BatchInput): Promise<s
       code,
       program_id: program.id,
       tutor_id: input.tutorId || null,
+      curriculum_id: input.curriculumId || null,
       start_date: sessions[0].date,
       schedule_label: label,
       meeting_url: cleanUrl(input.meetingUrl),
@@ -216,7 +231,12 @@ export async function createBatch(actorId: string, input: BatchInput): Promise<s
   if (error || !batch) dbError(error, "Batch gagal dibuat.");
   const { error: sessionError } = await supabase
     .from("class_sessions")
-    .insert(sessions.map((s) => ({ batch_id: batch.id, seq: s.seq, starts_at: s.starts_at, duration_minutes: input.minutes })));
+    .insert(
+      sessions.map((s) => {
+        const m = modules.find((x) => x.seq === s.seq);
+        return { batch_id: batch.id, seq: s.seq, starts_at: s.starts_at, duration_minutes: input.minutes, module_id: m?.id ?? null, topic: m?.title.slice(0, 200) ?? "" };
+      }),
+    );
   if (sessionError) {
     await supabase.from("batches").delete().eq("id", batch.id);
     dbError(sessionError, "Jadwal sesi gagal dibuat.");

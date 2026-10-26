@@ -54,6 +54,7 @@ export const ROLE_MENU: Record<Role, MenuItem[]> = {
     { slug: "anak", label: "Anak Saya", icon: "users", phase: 1 },
     { slug: "program", label: "Program Anak", icon: "book", phase: 2 },
     { slug: "jadwal", label: "Jadwal & Kehadiran", icon: "calendar", phase: 3 },
+    { slug: "materi", label: "Materi & Tugas", icon: "task", phase: 3 },
     { slug: "progres", label: "Progres & Laporan", icon: "report", phase: 4 },
     { slug: "pembayaran", label: "Pembayaran", icon: "wallet", phase: 2 },
     { slug: "bantuan", label: "Bantuan", icon: "help", phase: 5 },
@@ -77,7 +78,7 @@ export const ROLE_MENU: Record<Role, MenuItem[]> = {
     { slug: "cms", label: "CMS Website", icon: "edit", phase: 5 },
   ],
   lead: [
-    { slug: "", label: "Beranda", icon: "home", phase: 4 },
+    { slug: "", label: "Beranda", icon: "home", phase: 3 },
     { slug: "kurikulum", label: "Kurikulum", icon: "book", phase: 3 },
     { slug: "bank-soal", label: "Bank Soal Placement", icon: "test", phase: 1 },
     { slug: "placement", label: "Placement", icon: "check", phase: 1 },

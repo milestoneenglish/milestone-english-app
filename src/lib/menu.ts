@@ -6,7 +6,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 // Sebelum itu (mode Calon Siswa) menu tersebut disembunyikan, bukan dikunci.
 const LEARNING: Partial<Record<Role, string[]>> = {
   student: ["jadwal", "materi", "progres", "laporan"],
-  guardian: ["jadwal", "progres"],
+  guardian: ["jadwal", "materi", "progres"],
 };
 
 async function hasActiveStudent(role: Role, userId: string) {
