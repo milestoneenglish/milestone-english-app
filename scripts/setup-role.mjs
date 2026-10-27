@@ -1,7 +1,7 @@
 // Memberi role staf ke akun yang sudah ada (misalnya Owner yang ingin mencoba portal Lead/Tutor/Admin),
 // atau membuat akun staf baru dengan password sementara yang wajib diganti saat pertama masuk.
 // Jalankan: npm run setup:role -- email@domain.com lead "Nama Lengkap"
-// Role: owner | admin | lead | tutor. Menu Staf & Role untuk Owner menyusul di Fase 5.
+// Role: owner | admin | lead | tutor. Sehari-hari, staf ditambahkan Owner dari menu Staf & Role di portal.
 import { createClient } from "@supabase/supabase-js";
 import { randomInt } from "node:crypto";
 

@@ -90,6 +90,8 @@ export const ROLE_MENU: Record<Role, MenuItem[]> = {
     { slug: "staf", label: "Staf & Role", icon: "users", phase: 5 },
     { slug: "program", label: "Program & Harga", icon: "book", phase: 5 },
     { slug: "keuangan", label: "Keuangan", icon: "wallet", phase: 5 },
+    { slug: "cms", label: "CMS Website", icon: "edit", phase: 5 },
+    { slug: "kualitas-tutor", label: "Kualitas Tutor", icon: "star", phase: 5 },
     { slug: "audit", label: "Audit Log", icon: "shield", phase: 5 },
     { slug: "pengaturan", label: "Pengaturan", icon: "settings", phase: 2 },
   ],

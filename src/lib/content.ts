@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { cache } from "react";
 import { SEED_FAQS, SEED_PROGRAMS, SEED_SETTINGS, type Program } from "@/data/catalog";
+import { DEFAULT_IMAGES, DEFAULT_LANDING, mergeLanding, type LandingCopy, type LandingImages } from "@/data/landing";
 import { isSupabaseConfigured, SUPABASE_ANON_KEY, SUPABASE_URL } from "./supabase/env";
 
 export type { Program };
@@ -25,6 +26,8 @@ export type LandingContent = {
   testimonials: Testimonial[];
   contact: Contact;
   hero: Hero;
+  copy: LandingCopy;
+  images: LandingImages;
   preview: boolean;
 };
 
@@ -40,6 +43,8 @@ export const getLandingContent = cache(async (): Promise<LandingContent> => {
       testimonials: [],
       contact: SEED_SETTINGS.contact as Contact,
       hero: SEED_SETTINGS.hero as Hero,
+      copy: DEFAULT_LANDING,
+      images: DEFAULT_IMAGES,
       preview: true,
     };
   }
@@ -50,7 +55,7 @@ export const getLandingContent = cache(async (): Promise<LandingContent> => {
     supabase.from("programs").select(PROGRAM_COLUMNS).eq("status", "active").order("sort_order"),
     supabase.from("faqs").select("question, answer").eq("published", true).order("sort_order"),
     supabase.from("testimonials").select("name, program_label, quote").eq("published", true).order("sort_order").limit(3),
-    supabase.from("site_settings").select("key, value").in("key", ["contact", "hero"]),
+    supabase.from("site_settings").select("key, value").in("key", ["contact", "hero", "landing", "images"]),
     supabase.rpc("open_batches"),
   ]);
 
@@ -67,6 +72,8 @@ export const getLandingContent = cache(async (): Promise<LandingContent> => {
     testimonials: testimonials.data ?? [],
     contact: { ...(SEED_SETTINGS.contact as Contact), ...(byKey.contact ?? {}) },
     hero: { ...(SEED_SETTINGS.hero as Hero), ...(byKey.hero ?? {}) },
+    copy: mergeLanding(byKey.landing),
+    images: { ...DEFAULT_IMAGES, ...(byKey.images ?? {}) },
     preview: false,
   };
 });

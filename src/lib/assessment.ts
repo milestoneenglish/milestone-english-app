@@ -39,7 +39,7 @@ export function pointsOf(sessions: ClassSession[], modules: { id: string; assess
   });
 }
 
-async function moduleKinds(moduleIds: string[]) {
+export async function moduleKinds(moduleIds: string[]) {
   if (!moduleIds.length) return [];
   const { data } = await createAdminClient().from("curriculum_modules").select("id, assessment").in("id", moduleIds).not("assessment", "is", null);
   return (data ?? []) as { id: string; assessment: AssessmentKind }[];

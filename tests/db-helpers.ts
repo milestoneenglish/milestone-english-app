@@ -40,6 +40,7 @@ revoke insert, update, delete on public.attendance, public.assignments, public.s
 revoke insert, update, delete on public.rubric_indicators from authenticated, anon;
 grant update (label, descriptors) on public.rubric_indicators to authenticated;
 revoke insert, update, delete on public.assessments, public.reports from authenticated, anon;
+revoke insert, update, delete on public.tickets, public.ticket_messages, public.tutor_observations, public.tutor_surveys from authenticated, anon;
 `;
 
 export async function createTestDb() {

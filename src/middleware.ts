@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { isSupabaseConfigured, SUPABASE_ANON_KEY, SUPABASE_URL } from "@/lib/supabase/env";
+import { currentUser } from "@/lib/supabase/user";
 
 // Memperbarui sesi Supabase di setiap permintaan dan menjaga halaman portal.
 export async function middleware(request: NextRequest) {
@@ -20,9 +21,7 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await currentUser(supabase);
 
   if (!user && request.nextUrl.pathname.startsWith("/portal")) {
     const url = request.nextUrl.clone();

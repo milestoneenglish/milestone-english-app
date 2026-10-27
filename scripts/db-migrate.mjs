@@ -51,7 +51,8 @@ try {
   await sql.end();
 }
 
-// Bucket storage privat untuk rekaman placement, media soal, bukti bayar, materi kurikulum, file tugas, dan PDF laporan.
+// Bucket storage: privat untuk rekaman placement, media soal, bukti bayar, materi kurikulum, file tugas, PDF laporan,
+// dan nota pengeluaran; publik untuk gambar landing page.
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const LEARNING_TYPES = [
@@ -79,6 +80,9 @@ if (url && serviceKey) {
     { name: "learning-materials", options: { public: false, fileSizeLimit: "10MB", allowedMimeTypes: LEARNING_TYPES } },
     { name: "assignment-files", options: { public: false, fileSizeLimit: "10MB", allowedMimeTypes: LEARNING_TYPES } },
     { name: "report-files", options: { public: false, fileSizeLimit: "10MB", allowedMimeTypes: ["application/pdf"] } },
+    { name: "expense-receipts", options: { public: false, fileSizeLimit: "5MB", allowedMimeTypes: ["image/jpeg", "image/png", "image/webp", "application/pdf"] } },
+    // Satu-satunya bucket publik: gambar landing page dari CMS.
+    { name: "site-images", options: { public: true, fileSizeLimit: "5MB", allowedMimeTypes: ["image/jpeg", "image/png", "image/webp"] } },
   ];
   const { data: existing } = await admin.storage.listBuckets();
   for (const b of buckets) {

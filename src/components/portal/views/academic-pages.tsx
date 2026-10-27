@@ -7,6 +7,7 @@ import { whenLabel } from "@/lib/learning";
 import { leadReports, learnerReports, reportWorkspace, tutorReportTasks, type ReportRow, type ReportWorkspace } from "@/lib/reports";
 import type { Viewer } from "@/lib/session";
 import { Badge, EmptyState, formatDateTime, Notice, PageHeader, Panel, Tabs } from "../ui";
+import { SurveyPrompt } from "./quality";
 import { AssessmentForm, ReportForm, ReviewForm } from "./academic-forms";
 import { AssessmentNotes, EvidenceCompare, LevelChips, ProgressStats, ReportStatusBadge, ScoreBars, ScoreTable } from "./academic-ui";
 import { ChildTabs, loadLearners } from "./classes";
@@ -489,6 +490,7 @@ export async function ProgressPage({ viewer, role, params }: { viewer: Viewer; r
         subtitle="Nilai per indikator rubrik dari assessment awal, tengah, dan akhir, beserta bukti awal dibanding terbaru."
       />
       <ChildTabs learners={learners} active={learner?.student.id ?? ""} base={`/portal/${role}`} section="progres" />
+      {role === "guardian" && learner && <SurveyPrompt studentIds={[learner.student.id]} />}
       {progress.length === 0 && <EmptyState icon="chart" title="Belum ada progres" text="Progres tampil setelah kelas berjalan dan tutor menerbitkan assessment." />}
       {[...progress].reverse().map((p) => (
         <ClassProgressPanel key={p.cls.enrollment.id} p={p} />
@@ -512,6 +514,7 @@ export async function ReportsPage({ viewer, role, params }: { viewer: Viewer; ro
     <div className="fade-in mx-auto max-w-5xl space-y-6">
       <PageHeader title="Laporan" subtitle="Semua laporan dari program pertama sampai terbaru, lengkap dengan PDF dan rekomendasi program berikutnya." />
       <ChildTabs learners={learners} active={learner?.student.id ?? ""} base={`/portal/${role}`} section="laporan" />
+      {learner && <SurveyPrompt studentIds={[learner.student.id]} />}
       {reports.length === 0 ? (
         <EmptyState icon="report" title="Belum ada laporan" text="Laporan terbit setelah program selesai, disusun tutor dan ditinjau Academic Lead." />
       ) : (

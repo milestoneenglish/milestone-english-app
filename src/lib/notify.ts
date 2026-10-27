@@ -108,10 +108,97 @@ export const TEMPLATES = {
     lines: [`${d.count} laporan akhir sudah diajukan tutor lebih dari 2 hari dan belum ditinjau.`],
     cta: { label: "Review laporan", path: "/portal/lead/laporan" },
   }),
+  ticket_created: (d: { number: string; subject: string; name: string; category: string }): Message => ({
+    subject: `Tiket bantuan baru ${d.number}: ${d.subject}`,
+    lines: [`${d.name} membuat tiket bantuan kategori ${d.category}: ${d.subject}.`, "Balas dari menu Bantuan agar pengirim mendapat jawaban."],
+    cta: { label: "Balas tiket", path: "/portal/admin/bantuan" },
+  }),
+  ticket_followup: (d: { number: string; subject: string; name: string }): Message => ({
+    subject: `Balasan baru di tiket ${d.number}`,
+    lines: [`${d.name} menambahkan pesan di tiket ${d.number}: ${d.subject}.`],
+    cta: { label: "Buka tiket", path: "/portal/admin/bantuan" },
+  }),
+  ticket_replied: (d: { number: string; subject: string }): Message => ({
+    subject: `Tiket ${d.number} sudah dibalas`,
+    lines: [`Tim Milestone English membalas tiket bantuanmu: ${d.subject}.`, "Baca balasannya di portal, lalu balas lagi bila masih ada kendala."],
+    cta: { label: "Baca balasan", path: "/portal" },
+  }),
+  ticket_closed: (d: { number: string; subject: string }): Message => ({
+    subject: `Tiket ${d.number} ditutup`,
+    lines: [`Tiket bantuanmu (${d.subject}) sudah ditutup.`, "Bila kendalanya belum selesai, buka lagi tiket ini dari portal dalam 7 hari."],
+    cta: { label: "Lihat tiket", path: "/portal" },
+  }),
+  backup_reminder: (d: { last: string }): Message => ({
+    subject: "Saatnya backup data Milestone English",
+    lines: [`Backup terakhir: ${d.last}.`, "Unduh file backup dari menu Pengaturan, lalu simpan salinannya di Google Drive."],
+    cta: { label: "Unduh backup", path: "/portal/owner/pengaturan" },
+  }),
 } as const;
 
 export type TemplateKey = keyof typeof TEMPLATES;
 type TemplateData<K extends TemplateKey> = Parameters<(typeof TEMPLATES)[K]>[0];
+
+// Template yang teksnya bisa diubah Owner/Admin dari CMS. Template dengan isi bercabang
+// (feedback diterima/revisi, rekap keterlambatan) tetap mengikuti kode.
+export const TEMPLATE_INFO: Partial<Record<TemplateKey, { label: string; to: string }>> = {
+  placement_submitted: { label: "Placement test diterima", to: "Siswa/wali" },
+  placement_published: { label: "Hasil placement terbit", to: "Siswa/wali" },
+  invoice_created: { label: "Tagihan dibuat", to: "Siswa/wali" },
+  proof_submitted: { label: "Bukti bayar masuk", to: "Admin" },
+  payment_verified: { label: "Pembayaran terverifikasi", to: "Siswa/wali" },
+  payment_rejected: { label: "Bukti bayar ditolak", to: "Siswa/wali" },
+  tutor_new_student: { label: "Siswa baru di batch", to: "Tutor" },
+  tutor_assigned: { label: "Tutor ditugaskan", to: "Tutor" },
+  attendance_absent: { label: "Siswa tidak hadir", to: "Wali" },
+  assignment_published: { label: "Tugas baru", to: "Siswa/wali" },
+  assignment_reminder: { label: "Pengingat tenggat tugas", to: "Siswa/wali" },
+  report_submitted: { label: "Laporan menunggu review", to: "Academic Lead" },
+  report_returned: { label: "Laporan dikembalikan", to: "Tutor" },
+  report_published: { label: "Laporan terbit", to: "Siswa/wali" },
+  report_review_overdue: { label: "Laporan terlambat direview", to: "Academic Lead" },
+  ticket_created: { label: "Tiket bantuan baru", to: "Admin" },
+  ticket_followup: { label: "Balasan pengirim tiket", to: "Admin" },
+  ticket_replied: { label: "Tiket dibalas", to: "Siswa/wali" },
+  ticket_closed: { label: "Tiket ditutup", to: "Siswa/wali" },
+  backup_reminder: { label: "Pengingat backup", to: "Owner" },
+};
+
+export type EditableTemplate = { subject: string; body: string; cta: string };
+
+// Teks bawaan sebuah template dengan isian berbentuk {nama}, untuk ditampilkan dan diubah di CMS.
+export function defaultTemplate(key: TemplateKey): EditableTemplate {
+  const tokens = new Proxy({}, { get: (_t, prop) => (typeof prop === "string" ? `{${prop}}` : undefined) });
+  const m = (TEMPLATES[key] as (d: unknown) => Message)(tokens);
+  return { subject: m.subject, body: m.lines.join("\n\n"), cta: m.cta?.label ?? "" };
+}
+
+export function placeholdersOf(t: EditableTemplate) {
+  return [...new Set([...`${t.subject} ${t.body}`.matchAll(/\{(\w+)\}/g)].map((x) => x[1]))];
+}
+
+const fill = (text: string, data: Record<string, unknown>) =>
+  text.replace(/\{(\w+)\}/g, (all, k: string) => {
+    const v = data[k];
+    if (typeof v === "number") return v.toLocaleString("id-ID");
+    return typeof v === "string" ? v : all;
+  });
+
+async function templateOverrides(): Promise<Partial<Record<TemplateKey, EditableTemplate>>> {
+  const { data } = await createAdminClient().from("site_settings").select("value").eq("key", "notification_templates").maybeSingle();
+  return (data?.value ?? {}) as Partial<Record<TemplateKey, EditableTemplate>>;
+}
+
+async function buildMessage<K extends TemplateKey>(template: K, data: TemplateData<K>): Promise<Message> {
+  const base = (TEMPLATES[template] as (d: TemplateData<K>) => Message)(data);
+  const custom = TEMPLATE_INFO[template] ? (await templateOverrides())[template] : undefined;
+  if (!custom) return base;
+  const vars = data as Record<string, unknown>;
+  return {
+    subject: fill(custom.subject, vars),
+    lines: custom.body.split(/\n\s*\n/).map((l) => fill(l.trim(), vars)).filter(Boolean),
+    cta: base.cta && { ...base.cta, label: custom.cta.trim() || base.cta.label },
+  };
+}
 
 export function emailConfigured() {
   return Boolean(process.env.RESEND_API_KEY && process.env.EMAIL_FROM);
@@ -166,7 +253,7 @@ export async function notify<K extends TemplateKey>(template: K, recipientIds: (
   try {
     const admin = createAdminClient();
     const { data: profiles } = await admin.from("profiles").select("id, email, phone, status").in("id", ids);
-    const message = (TEMPLATES[template] as (d: TemplateData<K>) => Message)(data);
+    const message = await buildMessage(template, data);
     const jobs: { recipient_id: string; channel: "email" | "whatsapp"; destination: string; send: () => Promise<void>; ready: boolean }[] = [];
     for (const p of profiles ?? []) {
       if (p.status !== "active") continue;

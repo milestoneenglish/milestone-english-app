@@ -4,12 +4,16 @@ import { LeadReports, ProgressPage, ReportsPage, TutorAssessments, TutorReports 
 import { AdminGuardians, AdminRegistrations } from "@/components/portal/views/admin";
 import { AdminBatches, AdminHome, AdminPayments, OwnerSettings, TutorClasses } from "@/components/portal/views/admin-classes";
 import { PaymentPage, ProgramPage } from "@/components/portal/views/classes";
+import { CmsPage } from "@/components/portal/views/cms";
 import { GuardianChildren, GuardianHome } from "@/components/portal/views/guardian";
 import { LeadCurriculum, LeadHome } from "@/components/portal/views/lead-curriculum";
+import { OwnerAudit, OwnerFinance, OwnerHome, OwnerPrograms, OwnerStaff } from "@/components/portal/views/owner";
 import { LeadPlacement, TutorPlacement } from "@/components/portal/views/placement-staff";
+import { TutorQualityPage } from "@/components/portal/views/quality";
 import { QuestionBank } from "@/components/portal/views/question-bank";
 import { StudentHome, StudentPlacement } from "@/components/portal/views/student";
 import { MaterialsPage, SchedulePage } from "@/components/portal/views/student-learning";
+import { AdminSupport, HelpPage } from "@/components/portal/views/support";
 import { TutorHome, TutorSessions, TutorTasks } from "@/components/portal/views/tutor-learning";
 import { menuFor } from "@/lib/menu";
 import { isRole, ROLE_LABEL, ROLE_MENU, type Role } from "@/lib/roles";
@@ -28,6 +32,7 @@ const VIEWS: Partial<Record<Role, Record<string, (p: ViewProps) => Promise<React
     materi: ({ viewer, params }) => MaterialsPage({ viewer, role: "student", params }),
     progres: ({ viewer, params }) => ProgressPage({ viewer, role: "student", params }),
     laporan: ({ viewer, params }) => ReportsPage({ viewer, role: "student", params }),
+    bantuan: ({ viewer, params }) => HelpPage({ viewer, role: "student", params }),
   },
   guardian: {
     "": ({ viewer, params }) => GuardianHome({ viewer, error: params.galat }),
@@ -37,6 +42,7 @@ const VIEWS: Partial<Record<Role, Record<string, (p: ViewProps) => Promise<React
     jadwal: ({ viewer, params }) => SchedulePage({ viewer, role: "guardian", params }),
     materi: ({ viewer, params }) => MaterialsPage({ viewer, role: "guardian", params }),
     progres: ({ viewer, params }) => ProgressPage({ viewer, role: "guardian", params }),
+    bantuan: ({ viewer, params }) => HelpPage({ viewer, role: "guardian", params }),
   },
   tutor: {
     "": ({ viewer }) => TutorHome({ viewer }),
@@ -53,6 +59,7 @@ const VIEWS: Partial<Record<Role, Record<string, (p: ViewProps) => Promise<React
     placement: ({ viewer, params }) => LeadPlacement({ viewer, params }),
     "bank-soal": ({ params }) => QuestionBank({ params }),
     laporan: ({ viewer, params }) => LeadReports({ viewer, params }),
+    "kualitas-tutor": ({ params }) => TutorQualityPage({ role: "lead", params }),
   },
   admin: {
     "": ({ viewer }) => AdminHome({ viewer }),
@@ -60,8 +67,17 @@ const VIEWS: Partial<Record<Role, Record<string, (p: ViewProps) => Promise<React
     pembayaran: ({ params }) => AdminPayments({ params }),
     pendaftaran: ({ params }) => AdminRegistrations({ params }),
     "siswa-wali": () => AdminGuardians(),
+    bantuan: ({ params }) => AdminSupport({ params }),
+    cms: ({ params }) => CmsPage({ role: "admin", params }),
   },
   owner: {
+    "": ({ viewer, params }) => OwnerHome({ viewer, params }),
+    staf: ({ viewer }) => OwnerStaff({ viewer }),
+    program: () => OwnerPrograms(),
+    keuangan: ({ params }) => OwnerFinance({ params }),
+    cms: ({ params }) => CmsPage({ role: "owner", params }),
+    "kualitas-tutor": ({ params }) => TutorQualityPage({ role: "owner", params }),
+    audit: ({ params }) => OwnerAudit({ params }),
     pengaturan: () => OwnerSettings(),
   },
 };

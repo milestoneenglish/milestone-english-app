@@ -111,17 +111,28 @@ Aturan tugas: tenggat default sebelum sesi berikutnya; pengumpulan terlambat tet
 
 Tampilan PDF diatur di `src/lib/report-pdf.tsx`. Contohnya bisa dibuat tanpa database dengan `npm run report:sample` (hasil di folder `e2e-output/`).
 
+## 10. Owner dan operasional (Fase 5)
+
+1. **Staf & Role** (hanya Owner): tambah Admin, Academic Lead, atau Tutor dengan email dan password awal; staf wajib mengganti password saat pertama masuk. Owner bisa mengubah role, mengganti password staf yang lupa, dan menonaktifkan akun (langsung keluar dan tidak bisa masuk). Tutor yang masih memegang batch belum selesai harus dipindah batch-nya dulu.
+2. **Program & Harga** (Owner): harga, durasi, kapasitas, status buka/tutup, dan program baru. Harga baru hanya berlaku untuk invoice baru.
+3. **Keuangan** (Owner): pemasukan otomatis dari pembayaran terverifikasi; pengeluaran dicatat manual dengan kategori dan foto nota (bucket privat `expense-receipts`); arus kas 12 bulan dan ekspor CSV.
+4. **CMS Website** (Owner dan Admin): semua teks dan tiga gambar latar landing page (bucket publik `site-images`), FAQ, testimoni, kontak, deskripsi program, dan teks template notifikasi email/WhatsApp. Rekening tujuan transfer tetap hanya Owner (menu Pengaturan).
+5. **Bantuan**: siswa dan wali membuat tiket; Admin membalas dan menutup; tiket bisa dibuka lagi dalam 7 hari.
+6. **Kualitas Tutor** (Academic Lead dan Owner): ketepatan waktu absensi (24 jam), assessment (48 jam), dan laporan (3 hari), kecepatan feedback, observasi kelas 5 aspek, dan rekap survei siswa (siswa menilai tutor 1–5 setelah program selesai; tanpa nama).
+7. **Audit Log** (Owner) dan **backup**: menu Pengaturan → Unduh backup menghasilkan ZIP berisi CSV semua tabel untuk disimpan di Google Drive. Jadwal harian mengirim pengingat ke Owner bila backup terakhir lebih dari 30 hari.
+
 ## Perintah lain
 
 | Perintah | Fungsi |
 | --- | --- |
 | `npm test` | Menjalankan tes database dan keamanan |
 | `npm run check` | Cek tipe, lint, dan tes sekaligus |
-| `npm run setup:role -- email role "Nama"` | Memberi role staf (owner, admin, lead, tutor) ke akun, atau membuat akun staf dengan password sementara |
+| `npm run setup:role -- email role "Nama"` | Cadangan dari terminal: memberi role staf ke akun, atau membuat akun staf dengan password sementara (sehari-hari lewat menu Staf & Role) |
 | `npm run e2e:fase1` | Uji otomatis seluruh alur Fase 1 lewat browser (server dev harus berjalan); data uji dihapus otomatis |
 | `npm run e2e:fase2` | Uji otomatis alur Fase 2: batch, pilih kelas, bayar, verifikasi, onboarding, notifikasi; data uji dihapus dan rekening dikembalikan |
 | `npm run e2e:fase3` | Uji otomatis alur Fase 3: kurikulum, batch berkurikulum, absensi, tugas, revisi, feedback, mode baca saja; data uji dihapus dan kurikulum dikembalikan |
 | `npm run e2e:fase4` | Uji otomatis alur Fase 4: rubrik, assessment awal/tengah/akhir, progres, laporan, review Lead, PDF, program lanjutan; data uji dihapus dan kurikulum dikembalikan |
+| `npm run e2e:fase5` | Uji otomatis alur Fase 5: dashboard, staf, harga, keuangan, backup, audit, CMS, tiket, survei, kualitas tutor; data uji dihapus dan konten website dikembalikan |
 | `npm run report:sample` | Membuat contoh PDF laporan dengan data contoh untuk meninjau tampilannya |
 | `npm run db:migrate` | Memasang migrasi baru, seed (termasuk draf rubrik), dan bucket storage ke Supabase |
 | `npm run seed:generate` | Membuat ulang `supabase/seed.sql` dari `src/data/catalog.ts` |

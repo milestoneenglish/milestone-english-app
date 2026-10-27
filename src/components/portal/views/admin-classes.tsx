@@ -19,6 +19,7 @@ import { emailConfigured, whatsappConfigured } from "@/lib/notify";
 import type { IconName } from "@/lib/roles";
 import type { Viewer } from "@/lib/session";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { ticketCounts } from "@/lib/support";
 import { Badge, EmptyState, formatDateTime, Notice, PageHeader, Panel, Tabs } from "../ui";
 import { AdminEnrollForm, BatchCreateForm, BatchEditForm, PaymentDecision, PaymentSettingsForm } from "./admin-class-forms";
 import { EnrollmentBadge, InvoiceBadge } from "./classes";
@@ -51,7 +52,7 @@ export function QueueCard({ href, icon, count, title, text }: { href: string; ic
 }
 
 export async function AdminHome({ viewer }: { viewer: Viewer }) {
-  const [q, notes] = await Promise.all([adminQueue(), recentNotifications(8)]);
+  const [q, notes, tickets] = await Promise.all([adminQueue(), recentNotifications(8), ticketCounts()]);
   const firstName = (viewer.fullName || viewer.email).split(/[\s@]/)[0];
   return (
     <div className="fade-in space-y-6">
@@ -62,6 +63,7 @@ export async function AdminHome({ viewer }: { viewer: Viewer }) {
         <QueueCard href="/portal/admin/batch" icon="calendar" count={q.batchesWithoutTutor} title="Batch belum punya tutor" text="Tugaskan tutor sebelum kelas mulai." />
         <QueueCard href="/portal/admin/pendaftaran" icon="users" count={q.newStudents} title="Pendaftar baru 7 hari terakhir" text="Pantau placement dan pemilihan kelas." />
         <QueueCard href="/portal/admin/pembayaran?tab=belum" icon="wallet" count={q.unpaid} title="Invoice belum dibayar" text="Kursi dilepas otomatis setelah 2x24 jam." />
+        <QueueCard href="/portal/admin/bantuan" icon="help" count={tickets.open} title="Tiket bantuan perlu dibalas" text="Pertanyaan siswa dan wali." />
       </div>
       <Panel title="Notifikasi terakhir">
         <NotificationList rows={notes} />
@@ -428,15 +430,43 @@ export async function TutorClasses({ viewer }: { viewer: Viewer }) {
 }
 
 export async function OwnerSettings() {
-  const [settings, notes] = await Promise.all([paymentSettings(), recentNotifications(30)]);
+  const [settings, notes, backup] = await Promise.all([paymentSettings(), recentNotifications(30), createAdminClient().from("site_settings").select("value").eq("key", "backup").maybeSingle()]);
+  const lastBackup = (backup.data?.value as { last_at?: string } | undefined)?.last_at;
   const email = emailConfigured();
   const wa = whatsappConfigured();
   return (
     <div className="fade-in mx-auto max-w-5xl space-y-6">
-      <PageHeader title="Pengaturan" subtitle="Rekening tujuan transfer dan status pengiriman notifikasi." />
+      <PageHeader title="Pengaturan" subtitle="Rekening tujuan transfer, backup data, dan status pengiriman notifikasi." />
       {!settings.account_number && <Notice>Rekening tujuan belum diisi. Siswa melihat pesan &quot;rekening sedang disiapkan&quot; di halaman pembayaran.</Notice>}
       <Panel title="Rekening tujuan transfer">
         <PaymentSettingsForm initial={settings} />
+      </Panel>
+      <section id="backup">
+        <Panel title="Backup data">
+          <p className="text-sm text-amber-100">
+            Satu file ZIP berisi semua data (siswa, kelas, pembayaran, nilai, laporan, keuangan, dan lainnya) dalam format CSV yang bisa dibuka di Google Sheets atau Excel. Simpan
+            salinannya di Google Drive. Sistem mengingatkan lewat email bila backup terakhir lebih dari 30 hari.
+          </p>
+          <p className="mt-2 text-xs text-slate-400">
+            File unggahan (rekaman, bukti bayar, materi, PDF laporan) tidak ikut di ZIP; tetap tersimpan di Supabase Storage. File ini berisi data pribadi: simpan di folder Drive yang hanya bisa
+            dibuka Owner.
+          </p>
+          <div className="mt-4 flex flex-wrap items-center gap-4">
+            <a href="/api/owner/backup" className="btn-orange rounded-full px-6 py-2.5 text-sm">
+              Unduh backup (.zip)
+            </a>
+            <span className="text-xs text-amber-200/80">{lastBackup ? `Backup terakhir: ${formatDateTime(lastBackup)}` : "Belum pernah backup."}</span>
+          </div>
+        </Panel>
+      </section>
+      <Panel title="Template notifikasi">
+        <p className="text-sm text-amber-100">
+          Teks email dan WhatsApp bisa diubah dari{" "}
+          <Link href="/portal/owner/cms?tab=notifikasi" className="font-black text-orange underline">
+            CMS Website → Template notifikasi
+          </Link>
+          .
+        </p>
       </Panel>
       <Panel title="Notifikasi">
         <div className="mb-5 grid gap-3 sm:grid-cols-2">

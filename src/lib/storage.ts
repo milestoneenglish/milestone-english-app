@@ -16,11 +16,21 @@ const DOCS: Record<string, string> = {
   "image/webp": "webp",
 };
 
+const IMAGES: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
+const IMAGES_PDF: Record<string, string> = { ...IMAGES, "application/pdf": "pdf" };
+
 export const BUCKETS = {
   materials: { name: "learning-materials", types: { ...DOCS, ...AUDIO }, maxBytes: 10 * 1024 * 1024 },
   submissions: { name: "assignment-files", types: { ...DOCS, ...AUDIO }, maxBytes: 10 * 1024 * 1024 },
   reports: { name: "report-files", types: { "application/pdf": "pdf" }, maxBytes: 10 * 1024 * 1024 },
+  receipts: { name: "expense-receipts", types: IMAGES_PDF, maxBytes: 5 * 1024 * 1024 },
+  // Satu-satunya bucket publik: gambar landing page yang diunggah lewat CMS.
+  site: { name: "site-images", types: IMAGES, maxBytes: 5 * 1024 * 1024, public: true },
 } as const;
+
+export function publicUrl(bucket: BucketKey, path: string) {
+  return createAdminClient().storage.from(BUCKETS[bucket].name).getPublicUrl(path).data.publicUrl;
+}
 
 export type BucketKey = keyof typeof BUCKETS;
 
@@ -37,7 +47,7 @@ async function ensureBucket(bucket: BucketKey) {
   const b = BUCKETS[bucket];
   const admin = createAdminClient();
   const { data } = await admin.storage.getBucket(b.name);
-  if (!data) await admin.storage.createBucket(b.name, { public: false, fileSizeLimit: "10MB", allowedMimeTypes: Object.keys(b.types) });
+  if (!data) await admin.storage.createBucket(b.name, { public: "public" in b && b.public, fileSizeLimit: "10MB", allowedMimeTypes: Object.keys(b.types) });
 }
 
 export async function signedUpload(bucket: BucketKey, path: string) {

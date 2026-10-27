@@ -3,6 +3,7 @@ import { cache } from "react";
 import { isRole, ROLE_PRIORITY, type Role } from "./roles";
 import { isSupabaseConfigured } from "./supabase/env";
 import { createClient } from "./supabase/server";
+import { currentUser } from "./supabase/user";
 
 export type Viewer = {
   id: string;
@@ -15,9 +16,7 @@ export type Viewer = {
 export const requireViewer = cache(async (): Promise<Viewer> => {
   if (!isSupabaseConfigured) redirect("/masuk");
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await currentUser(supabase);
   if (!user) redirect("/masuk");
 
   const [{ data: profile }, { data: roleRows }] = await Promise.all([
