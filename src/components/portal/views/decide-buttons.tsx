@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { toast } from "@/components/toast";
 import { useState, useTransition } from "react";
 import { decideGuardianLink } from "@/app/portal/admin-actions";
 
@@ -11,8 +12,8 @@ export function DecideButtons({ linkId }: { linkId: string }) {
   const decide = (d: "verified" | "rejected") =>
     start(async () => {
       const res = await decideGuardianLink(linkId, d);
-      if (!res.ok) setError(res.error);
-      else router.refresh();
+      if (!res.ok) { toast.error(res.error); setError(res.error); }
+      else { toast.success("Keputusan tersimpan"); router.refresh(); }
     });
   return (
     <div className="flex items-center gap-2">

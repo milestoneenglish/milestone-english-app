@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AuthShell } from "@/components/auth-shell";
+import { LevelGuide } from "@/components/level-guide";
 import { AUTO_SECTIONS, overallLevel, SECTION_LABEL, type Level } from "@/lib/placement/levels";
 import { attemptForActor, PlacementError } from "@/lib/placement/server";
 
@@ -39,6 +40,9 @@ export default async function GuestResultPage({ params }: { params: Promise<{ id
           </li>
         ))}
       </ul>
+      <div className="mt-4">
+        <LevelGuide current={estimate} />
+      </div>
       <div className="mt-6 rounded-xl border border-orange/40 bg-orange/10 p-5">
         <h2 className="font-black text-orange">Lihat hasil lengkap dan rekomendasi kelas</h2>
         <p className="lp-muted mt-2 text-sm leading-relaxed">Buat akun dari browser ini. Hasil tesmu otomatis tersambung, jadi tidak perlu tes ulang.</p>

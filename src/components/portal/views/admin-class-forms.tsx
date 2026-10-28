@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { toast } from "@/components/toast";
 import { useMemo, useState, useTransition } from "react";
 import { createBatchAction, decidePaymentAction, enrollAction, proofUrlAction, savePaymentSettingsAction, updateBatchAction } from "@/app/portal/class-actions";
 import { generateSessions, parseDurationLabel, scheduleLabel, WEEKDAYS } from "@/lib/schedule";
@@ -58,7 +59,8 @@ export function BatchCreateForm({ programs, tutors, curricula }: { programs: Pro
     start(async () => {
       setError("");
       const res = await createBatchAction(f);
-      if (!res.ok) return setError(res.error);
+      if (!res.ok) { toast.error(res.error); return setError(res.error); }
+      toast.success("Batch dibuat");
       router.push(`/portal/admin/batch?id=${res.batchId}`);
     });
 
@@ -204,7 +206,8 @@ export function BatchEditForm({ batch, tutors }: { batch: EditableBatch; tutors:
     start(async () => {
       setError("");
       const res = await updateBatchAction(batch.id, f);
-      if (!res.ok) return setError(res.error);
+      if (!res.ok) { toast.error(res.error); return setError(res.error); }
+      toast.success("Batch tersimpan");
       setSaved(true);
       router.refresh();
     });
@@ -280,7 +283,8 @@ export function AdminEnrollForm({ batchId, candidates }: { batchId: string; cand
             start(async () => {
               setError("");
               const res = await enrollAction(value, batchId);
-              if (!res.ok) return setError(res.error);
+              if (!res.ok) { toast.error(res.error); return setError(res.error); }
+              toast.success("Siswa didaftarkan ke batch");
               setValue("");
               router.refresh();
             })
@@ -312,14 +316,15 @@ export function PaymentDecision({ proofId }: { proofId: string }) {
   const open = () =>
     start(async () => {
       const res = await proofUrlAction(proofId);
-      if (!res.ok) return setError(res.error);
+      if (!res.ok) { toast.error(res.error); return setError(res.error); }
       window.open(res.url, "_blank", "noopener,noreferrer");
     });
   const decide = (approve: boolean) =>
     start(async () => {
       setError("");
       const res = await decidePaymentAction(proofId, approve, approve ? "" : reason);
-      if (!res.ok) return setError(res.error);
+      if (!res.ok) { toast.error(res.error); return setError(res.error); }
+      toast.success(approve ? "Pembayaran diverifikasi" : "Bukti transfer ditolak");
       router.refresh();
     });
 
@@ -383,7 +388,8 @@ export function PaymentSettingsForm({ initial }: { initial: { bank_name: string;
         start(async () => {
           setError("");
           const res = await savePaymentSettingsAction(f);
-          if (!res.ok) return setError(res.error);
+          if (!res.ok) { toast.error(res.error); return setError(res.error); }
+          toast.success("Rekening tersimpan");
           setSaved(true);
           router.refresh();
         });

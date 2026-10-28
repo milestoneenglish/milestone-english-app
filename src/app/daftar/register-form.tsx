@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { useState } from "react";
 import { LEARNING_GOALS } from "@/lib/placement/levels";
-import { PASSWORD_RULE, passwordProblem } from "@/lib/password";
+import { passwordProblem } from "@/lib/password";
 import { normalizePhone } from "@/lib/phone";
+import { ResendConfirmation } from "@/components/resend-confirmation";
+import { dict, goalLabelFor, localePath, type Lang } from "@/lib/i18n";
 import { createClient } from "@/lib/supabase/client";
 
 type ProgramOption = { slug: string; name: string; category: string };
@@ -22,7 +24,9 @@ function Field({ label, children, hint }: { label: string; children: React.React
   );
 }
 
-export function RegisterForm({ programs, initialProgram }: { programs: ProgramOption[]; initialProgram: string }) {
+export function RegisterForm({ programs, initialProgram, lang = "id" }: { programs: ProgramOption[]; initialProgram: string; lang?: Lang }) {
+  const t = dict(lang).register;
+  const e = t.errors;
   const [type, setType] = useState<"student" | "guardian">("student");
   const [form, setForm] = useState({
     fullName: "",
@@ -54,17 +58,17 @@ export function RegisterForm({ programs, initialProgram }: { programs: ProgramOp
     setError("");
     const email = form.email.trim().toLowerCase();
     const phone = normalizePhone(form.phone);
-    if (form.fullName.trim().length < 2) return setError("Isi nama lengkap.");
-    if (!EMAIL_PATTERN.test(email)) return setError("Masukkan alamat email yang valid.");
-    if (!phone) return setError("Nomor WhatsApp tidak valid. Contoh: 081234567890.");
-    if (type === "student" && !validYear(form.birthYear, THIS_YEAR - 90, THIS_YEAR - 13)) return setError("Isi tahun lahir. Pendaftar mandiri minimal berusia 13 tahun; anak di bawah itu didaftarkan oleh wali.");
-    if (type === "guardian" && form.childName.trim().length < 2) return setError("Isi nama anak.");
-    if (type === "guardian" && !validYear(form.childBirthYear, THIS_YEAR - 25, THIS_YEAR - 4)) return setError("Isi tahun lahir anak.");
-    if (!form.goal) return setError("Pilih tujuan belajar.");
-    const problem = passwordProblem(form.password);
+    if (form.fullName.trim().length < 2) return setError(e.name);
+    if (!EMAIL_PATTERN.test(email)) return setError(e.email);
+    if (!phone) return setError(e.phone);
+    if (type === "student" && !validYear(form.birthYear, THIS_YEAR - 90, THIS_YEAR - 13)) return setError(e.birthYear);
+    if (type === "guardian" && form.childName.trim().length < 2) return setError(e.childName);
+    if (type === "guardian" && !validYear(form.childBirthYear, THIS_YEAR - 25, THIS_YEAR - 4)) return setError(e.childBirthYear);
+    if (!form.goal) return setError(e.goal);
+    const problem = passwordProblem(form.password, lang);
     if (problem) return setError(problem);
-    if (form.password !== form.confirm) return setError("Konfirmasi password tidak sama.");
-    if (!form.agree) return setError("Centang persetujuan untuk melanjutkan.");
+    if (form.password !== form.confirm) return setError(e.mismatch);
+    if (!form.agree) return setError(e.agree);
 
     setBusy(true);
     const data: Record<string, string> = {
@@ -84,11 +88,11 @@ export function RegisterForm({ programs, initialProgram }: { programs: ProgramOp
     });
     setBusy(false);
     if (err) {
-      if (err.code === "over_email_send_rate_limit") return setError("Pengiriman email verifikasi sedang dibatasi. Coba lagi beberapa menit lagi.");
-      if (err.status === 429) return setError("Terlalu banyak percobaan. Tunggu beberapa menit lalu coba lagi.");
-      if (err.code === "email_address_invalid") return setError("Alamat email tidak bisa dipakai. Gunakan alamat email aktif.");
-      if (err.code === "weak_password") return setError("Password terlalu lemah. Gunakan kombinasi huruf dan angka yang lebih panjang.");
-      return setError("Pendaftaran gagal diproses. Periksa data lalu coba lagi.");
+      if (err.code === "over_email_send_rate_limit") return setError(e.emailLimit);
+      if (err.status === 429) return setError(e.tooMany);
+      if (err.code === "email_address_invalid") return setError(e.emailInvalid);
+      if (err.code === "weak_password") return setError(e.weak);
+      return setError(e.failed);
     }
     // Saat verifikasi email dinonaktifkan di Supabase, sesi langsung aktif.
     if (result.session) {
@@ -101,13 +105,14 @@ export function RegisterForm({ programs, initialProgram }: { programs: ProgramOp
   if (sentTo) {
     return (
       <div>
-        <h2 className="text-xl font-black text-orange">Cek email kamu</h2>
-        <p className="lp-muted mt-3 text-sm leading-relaxed">
-          Kami mengirim link verifikasi ke <span className="font-bold text-white">{sentTo}</span>. Buka link itu dari browser ini untuk mengaktifkan akun, lalu kamu langsung masuk ke portal.
-        </p>
-        <p className="mt-3 text-xs text-amber-200/80">Tidak ada email? Periksa folder spam. Jika email sudah pernah terdaftar, langsung masuk atau pakai Lupa password.</p>
-        <Link href="/masuk" className="btn-orange mt-6 inline-block rounded-xl px-6 py-3 text-sm">
-          Ke halaman masuk
+        <h2 className="text-xl font-black text-orange">{t.sentTitle}</h2>
+        <p className="lp-muted mt-3 text-sm leading-relaxed">{t.sentText(sentTo)}</p>
+        <p className="mt-3 text-xs text-amber-200/80">{t.sentHint}</p>
+        <div className="mt-3">
+          <ResendConfirmation email={sentTo} lang={lang} />
+        </div>
+        <Link href={localePath(lang, "/masuk")} className="btn-orange mt-6 inline-block rounded-xl px-6 py-3 text-sm">
+          {t.toLogin}
         </Link>
       </div>
     );
@@ -121,11 +126,11 @@ export function RegisterForm({ programs, initialProgram }: { programs: ProgramOp
         void submit();
       }}
     >
-      <div className="grid grid-cols-2 gap-2 rounded-2xl border border-orange/30 bg-navy p-1.5" role="radiogroup" aria-label="Jenis pendaftaran">
+      <div className="grid grid-cols-2 gap-2 rounded-2xl border border-orange/30 bg-navy p-1.5" role="radiogroup" aria-label={t.typeAria}>
         {(
           [
-            ["student", "Saya siswa", "Usia 13 tahun ke atas"],
-            ["guardian", "Saya wali", "Mendaftarkan anak"],
+            ["student", t.student, t.studentSub],
+            ["guardian", t.guardian, t.guardianSub],
           ] as const
         ).map(([value, title, sub]) => (
           <button
@@ -143,25 +148,27 @@ export function RegisterForm({ programs, initialProgram }: { programs: ProgramOp
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label={type === "guardian" ? "Nama lengkap wali" : "Nama lengkap"}>
+        <Field label={type === "guardian" ? t.guardianName : t.fullName}>
           <input value={form.fullName} onChange={set("fullName")} autoComplete="name" required maxLength={120} className="field" />
         </Field>
-        <Field label="Nomor WhatsApp" hint="Untuk pemberitahuan jadwal dan pembayaran.">
+        <Field label={t.phone} hint={t.phoneHint}>
           <input value={form.phone} onChange={set("phone")} type="tel" inputMode="tel" autoComplete="tel" required placeholder="081234567890" className="field" />
         </Field>
-        <Field label="Email">
+        <Field label={t.email}>
           <input value={form.email} onChange={set("email")} type="email" inputMode="email" autoComplete="email" required className="field" />
         </Field>
         {type === "student" ? (
-          <Field label="Tahun lahir">
+          <Field label={t.birthYear}>
             <input value={form.birthYear} onChange={set("birthYear")} inputMode="numeric" required maxLength={4} placeholder="2001" className="field" />
           </Field>
         ) : (
-          <Field label="Hubungan dengan anak">
+          <Field label={t.relationship}>
             <select value={form.relationship} onChange={set("relationship")} className="field">
-              <option value="orang_tua">Orang tua</option>
-              <option value="wali">Wali</option>
-              <option value="lainnya">Lainnya</option>
+              {Object.entries(t.relations).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
             </select>
           </Field>
         )}
@@ -169,29 +176,29 @@ export function RegisterForm({ programs, initialProgram }: { programs: ProgramOp
 
       {type === "guardian" && (
         <div className="grid gap-4 rounded-2xl border border-orange/25 p-4 sm:grid-cols-2">
-          <Field label="Nama lengkap anak">
+          <Field label={t.childName}>
             <input value={form.childName} onChange={set("childName")} required maxLength={120} className="field" />
           </Field>
-          <Field label="Tahun lahir anak">
+          <Field label={t.childBirthYear}>
             <input value={form.childBirthYear} onChange={set("childBirthYear")} inputMode="numeric" required maxLength={4} placeholder="2015" className="field" />
           </Field>
         </div>
       )}
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Tujuan belajar">
+        <Field label={t.goal}>
           <select value={form.goal} onChange={set("goal")} required className="field">
-            <option value="">Pilih tujuan</option>
+            <option value="">{t.goalPick}</option>
             {LEARNING_GOALS.map((g) => (
               <option key={g.value} value={g.value}>
-                {g.label}
+                {goalLabelFor(lang, g.value, g.label)}
               </option>
             ))}
           </select>
         </Field>
-        <Field label="Program yang diminati" hint="Boleh dikosongkan; rekomendasi diberikan setelah placement.">
+        <Field label={t.program} hint={t.programHint}>
           <select value={form.program} onChange={set("program")} className="field">
-            <option value="">Belum tahu</option>
+            <option value="">{t.programNone}</option>
             {programs.map((p) => (
               <option key={p.slug} value={p.slug}>
                 {p.name} · {p.category}
@@ -202,17 +209,17 @@ export function RegisterForm({ programs, initialProgram }: { programs: ProgramOp
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Password" hint={PASSWORD_RULE}>
+        <Field label={t.password} hint={dict(lang).password.rule}>
           <input value={form.password} onChange={set("password")} type="password" autoComplete="new-password" required minLength={8} maxLength={72} className="field" />
         </Field>
-        <Field label="Ulangi password">
+        <Field label={t.confirm}>
           <input value={form.confirm} onChange={set("confirm")} type="password" autoComplete="new-password" required minLength={8} maxLength={72} className="field" />
         </Field>
       </div>
 
       <label className="flex items-start gap-3 text-xs leading-relaxed text-amber-100">
         <input type="checkbox" checked={form.agree} onChange={set("agree")} className="mt-0.5 h-4 w-4 shrink-0 accent-orange" />
-        Saya setuju data ini dipakai Milestone English untuk proses pendaftaran, placement, dan pembelajaran, serta untuk dihubungi lewat email dan WhatsApp.
+        {t.agree}
       </label>
 
       {error && (
@@ -221,7 +228,7 @@ export function RegisterForm({ programs, initialProgram }: { programs: ProgramOp
         </p>
       )}
       <button type="submit" disabled={busy} className="btn-orange w-full rounded-xl py-3.5 text-sm">
-        {busy ? "Mendaftarkan..." : "Daftar dan verifikasi email"}
+        {busy ? t.busy : t.submit}
       </button>
     </form>
   );

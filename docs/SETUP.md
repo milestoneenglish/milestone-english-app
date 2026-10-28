@@ -31,22 +31,22 @@ Tanpa `SUPABASE_DB_URL`, kamu juga bisa menempel isi setiap file migrasi lalu `s
 
 ## 3. Atur login
 
-Login memakai email dan password. Email hanya dipakai untuk verifikasi akun baru dan lupa password.
+Login memakai email dan password. Ada dua pintu masuk: **`/masuk`** untuk siswa dan wali (ditautkan dari landing page) dan **`/tim`** untuk Owner, Admin, Academic Lead, dan Tutor (tidak ditautkan; bagikan link-nya ke tim). Akun yang salah pintu diarahkan ke halaman yang benar.
 
 1. Buka **Authentication > Sign In / Providers > Email**:
-   - Pastikan **Email** aktif dan **Confirm email** menyala.
+   - Pastikan **Email** aktif.
+   - **Confirm email**: matikan dulu, supaya siswa baru langsung masuk setelah mendaftar. Nyalakan setelah Gmail SMTP tersambung (lihat [EMAIL-LINK.md](EMAIL-LINK.md)); saklar ini sekaligus mengaktifkan lupa password lewat link email.
    - **Minimum password length**: `8`.
    - **Password requirements**: pilih huruf dan angka (*Letters and digits*).
 2. Buka **Authentication > URL Configuration**:
    - **Site URL**: `http://localhost:3100` untuk sekarang. Setelah deploy, ganti dengan domain kamu.
    - **Redirect URLs**: tambahkan `http://localhost:3100/**`. Setelah deploy, tambahkan juga `https://domainkamu.com/**`.
 
-Selama belum memakai SMTP sendiri, template email dikunci Supabase dan berbahasa Inggris. Email verifikasi dan lupa password berisi link; aplikasi menerimanya lewat `/auth/callback`. Batasannya:
+Pengirim email bawaan Supabase hanya mengirim ke anggota tim akun Supabase dan hanya beberapa email per jam, jadi belum bisa dipakai siswa.
 
-- Email bawaan hanya terkirim ke alamat anggota tim di akun Supabase, dan hanya beberapa email per jam.
-- Buka link di browser yang sama dengan tempat kamu memintanya.
+Selama **Confirm email** mati, halaman Lupa password mengarahkan siswa/wali menghubungi admin lewat WhatsApp; admin membuat password sementara dari menu **Pendaftaran** (kolom Akun), dan staf dibuatkan oleh Owner dari **Staf & Role**. Keduanya wajib mengganti password saat masuk.
 
-Setelah domain dan Resend siap (Fase 2), sambungkan SMTP di **Authentication > Emails > SMTP Settings**, lalu template email bisa diganti ke bahasa Indonesia dengan tampilan Milestone English.
+Untuk konfirmasi akun dan reset password lewat link email (tanpa Resend dan tanpa kode OTP), ikuti [EMAIL-LINK.md](EMAIL-LINK.md): Gmail khusus Milestone sebagai SMTP, template email berbahasa Indonesia, lalu nyalakan **Confirm email**.
 
 ## 4. Isi kunci di laptop
 
@@ -72,7 +72,7 @@ Terminal menampilkan **password sementara**. Pakai untuk masuk pertama kali; kam
 npm run dev -- -p 3100
 ```
 
-Buka `http://localhost:3100`. Landing page sekarang membaca data dari Supabase (tanda "Mode pratinjau" hilang). Klik **Masuk**, masukkan email Owner dan password sementara dari langkah 5. Kamu akan diminta membuat password pribadi, lalu masuk ke portal Owner.
+Buka `http://localhost:3100`. Landing page sekarang membaca data dari Supabase (tanda "Mode pratinjau" hilang). Buka `http://localhost:3100/tim`, masukkan email Owner dan password sementara dari langkah 5. Kamu akan diminta membuat password pribadi, lalu masuk ke portal Owner.
 
 ## 7. Pembayaran dan notifikasi (Fase 2)
 
@@ -116,10 +116,24 @@ Tampilan PDF diatur di `src/lib/report-pdf.tsx`. Contohnya bisa dibuat tanpa dat
 1. **Staf & Role** (hanya Owner): tambah Admin, Academic Lead, atau Tutor dengan email dan password awal; staf wajib mengganti password saat pertama masuk. Owner bisa mengubah role, mengganti password staf yang lupa, dan menonaktifkan akun (langsung keluar dan tidak bisa masuk). Tutor yang masih memegang batch belum selesai harus dipindah batch-nya dulu.
 2. **Program & Harga** (Owner): harga, durasi, kapasitas, status buka/tutup, dan program baru. Harga baru hanya berlaku untuk invoice baru.
 3. **Keuangan** (Owner): pemasukan otomatis dari pembayaran terverifikasi; pengeluaran dicatat manual dengan kategori dan foto nota (bucket privat `expense-receipts`); arus kas 12 bulan dan ekspor CSV.
-4. **CMS Website** (Owner dan Admin): semua teks dan tiga gambar latar landing page (bucket publik `site-images`), FAQ, testimoni, kontak, deskripsi program, dan teks template notifikasi email/WhatsApp. Rekening tujuan transfer tetap hanya Owner (menu Pengaturan).
+4. **CMS Website** (khusus Owner sejak Kelompok 3, lihat bagian 12): semua teks dan tiga gambar latar landing page (bucket publik `site-images`), FAQ, testimoni, kontak, dan deskripsi program. Template notifikasi email/WhatsApp dan rekening tujuan transfer ada di menu Pengaturan.
 5. **Bantuan**: siswa dan wali membuat tiket; Admin membalas dan menutup; tiket bisa dibuka lagi dalam 7 hari.
 6. **Kualitas Tutor** (Academic Lead dan Owner): ketepatan waktu absensi (24 jam), assessment (48 jam), dan laporan (3 hari), kecepatan feedback, observasi kelas 5 aspek, dan rekap survei siswa (siswa menilai tutor 1–5 setelah program selesai; tanpa nama).
 7. **Audit Log** (Owner) dan **backup**: menu Pengaturan → Unduh backup menghasilkan ZIP berisi CSV semua tabel untuk disimpan di Google Drive. Jadwal harian mengirim pengingat ke Owner bila backup terakhir lebih dari 30 hari.
+
+## 11. Notifikasi portal dan kabar WhatsApp manual
+
+1. Jalankan `npm run db:migrate` untuk memasang tabel notifikasi portal (`inbox`).
+2. Setiap notifikasi (tagihan, tugas, laporan, tiket, dan lainnya) masuk ke **lonceng** di portal penerimanya, walaupun email dan WhatsApp otomatis belum disambungkan. Notifikasi lebih dari 90 hari dibersihkan jadwal harian.
+3. Angka di menu sidebar menunjukkan hal yang menunggu dicek, misalnya bukti bayar, tugas yang perlu feedback, dan laporan yang perlu direview.
+4. **Beranda Admin → Kabari lewat WhatsApp**: tagihan belum dibayar, siswa tidak hadir (7 hari terakhir), dan laporan baru terbit (14 hari terakhir). Tombol hijau membuka WhatsApp admin dengan pesan terisi; setelah dikirim, penerimanya ditandai sudah dikabari. Teks pengingat pembayaran bisa diubah di template notifikasi.
+
+## 12. Website dua bahasa dan kartu landing page
+
+1. Jalankan `npm run db:migrate` untuk memasang kolom English, tabel kartu `site_items`, dan aturan CMS khusus Owner. Sebelum migrasi ini dijalankan, website tetap tampil, tetapi kartu mitra/tutor/galeri dan kolom English belum bisa disimpan.
+2. Website tersedia dalam bahasa Indonesia (`/`, `/daftar`, `/masuk`, `/lupa-password`, `/password-baru`) dan English (`/en`, `/en/daftar`, dan seterusnya). Pengunjung baru selalu melihat versi Indonesia; tombol **ID | EN** ada di menu atas. Portal, `/tim`, dan placement test tetap berbahasa Indonesia.
+3. **CMS Website** (Owner): tab **Bagian website** untuk menyalakan/mematikan setiap bagian; **Teks** dengan pilihan Bahasa Indonesia / English; kartu **Telah dipercaya oleh** (logo dan nama), **Tutor kami** (foto, nama, keahlian, riwayat singkat; terpisah dari akun portal), dan **Galeri** (maksimal 12 foto tampil). Setiap kartu punya tombol On/Off dan urutan. Foto diperkecil otomatis di browser sebelum diunggah.
+4. Kolom English yang kosong tampil dalam bahasa Indonesia. Teks bawaan sudah diterjemahkan; terjemahan bawaan berhenti dipakai begitu teks Indonesia di kolom itu diubah, sampai kolom English-nya diisi.
 
 ## Perintah lain
 
@@ -133,6 +147,9 @@ Tampilan PDF diatur di `src/lib/report-pdf.tsx`. Contohnya bisa dibuat tanpa dat
 | `npm run e2e:fase3` | Uji otomatis alur Fase 3: kurikulum, batch berkurikulum, absensi, tugas, revisi, feedback, mode baca saja; data uji dihapus dan kurikulum dikembalikan |
 | `npm run e2e:fase4` | Uji otomatis alur Fase 4: rubrik, assessment awal/tengah/akhir, progres, laporan, review Lead, PDF, program lanjutan; data uji dihapus dan kurikulum dikembalikan |
 | `npm run e2e:fase5` | Uji otomatis alur Fase 5: dashboard, staf, harga, keuangan, backup, audit, CMS, tiket, survei, kualitas tutor; data uji dihapus dan konten website dikembalikan |
+| `npm run demo:isi` | Mengisi data contoh untuk uji coba manual: 7 akun demo dan 3 batch SpeakUp (panduan di `docs/UJI-COBA.md`) |
+| `npm run demo:password` | Mengganti password semua akun demo (lewat HTTPS, data tidak berubah); daftar akun tersimpan di `e2e-output/akun-demo.txt` |
+| `npm run demo:hapus` | Menghapus semua data contoh beserta yang dibuat lewat akun demo; kurikulum SpeakUp kembali draf |
 | `npm run report:sample` | Membuat contoh PDF laporan dengan data contoh untuk meninjau tampilannya |
 | `npm run db:migrate` | Memasang migrasi baru, seed (termasuk draf rubrik), dan bucket storage ke Supabase |
 | `npm run seed:generate` | Membuat ulang `supabase/seed.sql` dari `src/data/catalog.ts` |

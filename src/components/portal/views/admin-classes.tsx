@@ -20,9 +20,12 @@ import type { IconName } from "@/lib/roles";
 import type { Viewer } from "@/lib/session";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ticketCounts } from "@/lib/support";
-import { Badge, EmptyState, formatDateTime, Notice, PageHeader, Panel, Tabs } from "../ui";
+import { whatsappQueue, type WaItem } from "@/lib/whatsapp";
+import { Badge, EmptyState, formatDateTime, Notice, greeting, PageHeader, Panel, Tabs } from "../ui";
 import { AdminEnrollForm, BatchCreateForm, BatchEditForm, PaymentDecision, PaymentSettingsForm } from "./admin-class-forms";
 import { EnrollmentBadge, InvoiceBadge } from "./classes";
+import { NotificationTemplates } from "./cms";
+import { WhatsappSendButton } from "./whatsapp-forms";
 
 const BATCH_STATUS: Record<BatchRow["status"], { label: string; tone: "orange" | "green" | "amber" | "slate" | "red" }> = {
   draft: { label: "Draf", tone: "slate" },
@@ -52,11 +55,11 @@ export function QueueCard({ href, icon, count, title, text }: { href: string; ic
 }
 
 export async function AdminHome({ viewer }: { viewer: Viewer }) {
-  const [q, notes, tickets] = await Promise.all([adminQueue(), recentNotifications(8), ticketCounts()]);
+  const [q, notes, tickets, wa] = await Promise.all([adminQueue(), recentNotifications(8), ticketCounts(), whatsappQueue()]);
   const firstName = (viewer.fullName || viewer.email).split(/[\s@]/)[0];
   return (
     <div className="fade-in space-y-6">
-      <PageHeader title={`Halo, ${firstName}!`} subtitle="Perlu tindakan hari ini." />
+      <PageHeader title={greeting(firstName)} subtitle="Perlu tindakan hari ini." />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <QueueCard href="/portal/admin/pembayaran" icon="wallet" count={q.proofs} title="Bukti bayar menunggu verifikasi" text="Verifikasi agar kelas siswa langsung aktif." />
         <QueueCard href="/portal/admin/siswa-wali" icon="shield" count={q.guardians} title="Hubungan wali perlu diverifikasi" text="Wali baru bisa memilih kelas setelah diverifikasi." />
@@ -65,10 +68,47 @@ export async function AdminHome({ viewer }: { viewer: Viewer }) {
         <QueueCard href="/portal/admin/pembayaran?tab=belum" icon="wallet" count={q.unpaid} title="Invoice belum dibayar" text="Kursi dilepas otomatis setelah 2x24 jam." />
         <QueueCard href="/portal/admin/bantuan" icon="help" count={tickets.open} title="Tiket bantuan perlu dibalas" text="Pertanyaan siswa dan wali." />
       </div>
+      <Panel title={`Kabari lewat WhatsApp (${wa.length})`}>
+        <WhatsappQueue items={wa} />
+      </Panel>
       <Panel title="Notifikasi terakhir">
         <NotificationList rows={notes} />
       </Panel>
     </div>
+  );
+}
+
+// Kabar penting yang dikirim admin dari WhatsApp-nya sendiri: tagihan belum dibayar, siswa tidak hadir
+// (7 hari terakhir), dan laporan yang baru terbit (14 hari terakhir).
+function WhatsappQueue({ items }: { items: WaItem[] }) {
+  if (!items.length) return <EmptyState icon="check" title="Semua sudah dikabari" text="Tagihan belum dibayar, ketidakhadiran, dan laporan baru terbit akan muncul di sini." />;
+  return (
+    <ul className="divide-y divide-orange/10">
+      {items.map((item) => (
+        <li key={item.key} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm">
+          <div className="min-w-0">
+            <p className="font-bold text-white">{item.title}</p>
+            <p className="text-xs text-amber-200/70">{item.detail}</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {item.contacts.length === 0 && <span className="text-xs text-slate-400">Belum ada akun siswa/wali yang bisa dikabari</span>}
+            {item.contacts.map((c) =>
+              c.done ? (
+                <Badge key={c.recipientId} tone="green">
+                  ✓ {c.name}
+                </Badge>
+              ) : c.phone ? (
+                <WhatsappSendButton key={c.recipientId} kind={item.kind} entityId={item.entityId} recipientId={c.recipientId} phone={c.phone} text={item.text} label={c.name} />
+              ) : (
+                <span key={c.recipientId} className="text-xs text-slate-400">
+                  {c.name}: nomor WA belum diisi
+                </span>
+              ),
+            )}
+          </div>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -436,7 +476,7 @@ export async function OwnerSettings() {
   const wa = whatsappConfigured();
   return (
     <div className="fade-in mx-auto max-w-5xl space-y-6">
-      <PageHeader title="Pengaturan" subtitle="Rekening tujuan transfer, backup data, dan status pengiriman notifikasi." />
+      <PageHeader title="Pengaturan" subtitle="Rekening tujuan transfer, backup data, template notifikasi, dan status pengiriman notifikasi." />
       {!settings.account_number && <Notice>Rekening tujuan belum diisi. Siswa melihat pesan &quot;rekening sedang disiapkan&quot; di halaman pembayaran.</Notice>}
       <Panel title="Rekening tujuan transfer">
         <PaymentSettingsForm initial={settings} />
@@ -459,15 +499,11 @@ export async function OwnerSettings() {
           </div>
         </Panel>
       </section>
-      <Panel title="Template notifikasi">
-        <p className="text-sm text-amber-100">
-          Teks email dan WhatsApp bisa diubah dari{" "}
-          <Link href="/portal/owner/cms?tab=notifikasi" className="font-black text-orange underline">
-            CMS Website → Template notifikasi
-          </Link>
-          .
-        </p>
-      </Panel>
+      <section id="template">
+        <Panel title="Template notifikasi">
+          <NotificationTemplates />
+        </Panel>
+      </section>
       <Panel title="Notifikasi">
         <div className="mb-5 grid gap-3 sm:grid-cols-2">
           <div className="lp-card-soft p-4 text-sm">

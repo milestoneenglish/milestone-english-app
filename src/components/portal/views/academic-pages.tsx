@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Icon } from "@/components/icons";
+import { LevelGuide } from "@/components/level-guide";
 import { ASSESSMENT_KINDS, ASSESSMENT_LABEL, overallReportLevel, type AssessmentKind, type ReportSummary, type SkillLevels } from "@/lib/academic";
 import { assessmentSheet, learnerProgress, tutorAssessmentQueue, type ClassProgress } from "@/lib/assessment";
 import { longDate } from "@/lib/classes";
@@ -20,7 +21,7 @@ const dueLabel = (ms: number) => formatDateTime(new Date(ms).toISOString());
 // ---------------------------------------------------------------------------
 
 export async function TutorAssessments({ viewer, params }: { viewer: Viewer; params: Record<string, string | undefined> }) {
-  if (params.batch && ASSESSMENT_KINDS.includes(params.kind as AssessmentKind)) return AssessmentSheetPage({ viewer, batchId: params.batch, kind: params.kind as AssessmentKind });
+  if (params.batch && ASSESSMENT_KINDS.includes(params.kind as AssessmentKind)) return AssessmentSheetPage({ viewer, batchId: params.batch, kind: params.kind as AssessmentKind, studentId: params.siswa });
   const items = await tutorAssessmentQueue(viewer.id);
   const pending = items.filter((i) => i.students.some((s) => s.state !== "published"));
   const tab = params.tab === "semua" || !pending.length ? "semua" : "perlu";
@@ -72,18 +73,30 @@ export async function TutorAssessments({ viewer, params }: { viewer: Viewer; par
   );
 }
 
-async function AssessmentSheetPage({ viewer, batchId, kind }: { viewer: Viewer; batchId: string; kind: AssessmentKind }) {
+function AssessmentStateBadge({ st }: { st: { state: string; overdue: boolean } }) {
+  return st.state === "published" ? <Badge tone="green">Terbit</Badge> : st.state === "draft" ? <Badge tone="amber">Draf</Badge> : <Badge tone={st.overdue ? "red" : "amber"}>Belum dinilai</Badge>;
+}
+
+// Daftar siswa dulu; form rubrik terbuka setelah nama siswa diklik (?siswa=).
+async function AssessmentSheetPage({ viewer, batchId, kind, studentId }: { viewer: Viewer; batchId: string; kind: AssessmentKind; studentId?: string }) {
   const sheet = await assessmentSheet(batchId, kind, viewer.id);
   if (!sheet) return <Notice tone="red">Assessment tidak ditemukan atau bukan bagian dari kelasmu.</Notice>;
   const started = Date.parse(sheet.session.starts_at) <= Date.now();
+  const sheetHref = `/portal/tutor/assessment?batch=${sheet.batch.id}&kind=${kind}`;
+  const index = sheet.students.findIndex((s) => s.student_id === studentId);
+  const st = index >= 0 ? sheet.students[index] : null;
+  // Siswa berikutnya yang belum terbit, berputar dari siswa yang sedang dibuka.
+  const nextOpen = st ? [...sheet.students.slice(index + 1), ...sheet.students.slice(0, index)].find((s) => s.state !== "published") : null;
+  const published = sheet.students.filter((s) => s.state === "published").length;
+  const title = `${sheet.batch.code} · Assessment ${ASSESSMENT_LABEL[kind].toLowerCase()}`;
   return (
     <div className="fade-in space-y-6">
       <PageHeader
-        title={`${sheet.batch.code} · Assessment ${ASSESSMENT_LABEL[kind].toLowerCase()}`}
-        subtitle={`${sheet.batch.program.name} · Sesi ${sheet.session.seq} · ${whenLabel(sheet.session.starts_at)}`}
+        title={st ? st.full_name : title}
+        subtitle={`${st ? `${title} · ` : ""}${sheet.batch.program.name} · Sesi ${sheet.session.seq} · ${whenLabel(sheet.session.starts_at)}`}
         action={
-          <Link href="/portal/tutor/assessment" className="text-sm font-bold text-orange">
-            ← Semua assessment
+          <Link href={st ? sheetHref : "/portal/tutor/assessment"} className="text-sm font-bold text-orange">
+            {st ? "← Daftar siswa" : "← Semua assessment"}
           </Link>
         }
       />
@@ -91,36 +104,64 @@ async function AssessmentSheetPage({ viewer, batchId, kind }: { viewer: Viewer; 
         <Notice>Assessment bisa diisi setelah sesi {sheet.session.seq} dimulai.</Notice>
       ) : sheet.indicators.length === 0 ? (
         <Notice tone="red">Kurikulum batch ini belum punya rubrik. Hubungi Academic Lead.</Notice>
+      ) : st ? (
+        <Panel>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <p className={`text-xs ${st.overdue ? "font-bold text-rose-300" : "text-amber-200/70"}`}>
+              {st.makeup ? "Tidak hadir di sesi assessment · nilai susulan" : "Batas penilaian"} paling lambat {dueLabel(st.due)}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {st.makeup && <Badge>Susulan</Badge>}
+              <AssessmentStateBadge st={st} />
+            </div>
+          </div>
+          <AssessmentForm
+            key={st.student_id}
+            batchId={sheet.batch.id}
+            studentId={st.student_id}
+            studentName={st.full_name}
+            kind={kind}
+            indicators={sheet.indicators}
+            initial={st.assessment ? { scores: st.assessment.scores, note: st.assessment.note } : null}
+            published={st.state === "published"}
+            locked={st.locked}
+          />
+          {nextOpen && (
+            <div className="mt-5 flex justify-end border-t border-orange/15 pt-4">
+              <Link href={`${sheetHref}&siswa=${nextOpen.student_id}`} className="text-sm font-black text-orange hover:underline">
+                Siswa berikutnya: {nextOpen.full_name} →
+              </Link>
+            </div>
+          )}
+        </Panel>
       ) : (
         <>
-          <Notice>Nilai draf belum terlihat siswa. Setelah terbit, nilai dan catatan tampil di halaman Progres siswa dan wali, dan masih bisa diperbaiki sampai laporan akhir diajukan.</Notice>
-          {sheet.students.length === 0 && <EmptyState icon="users" title="Belum ada siswa aktif" />}
-          {sheet.students.map((st) => (
-            <Panel key={st.student_id}>
-              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="text-lg font-black text-white">{st.full_name}</p>
-                  <p className={`text-xs ${st.overdue ? "font-bold text-rose-300" : "text-amber-200/70"}`}>
-                    {st.makeup ? "Tidak hadir di sesi assessment · nilai susulan" : "Batas penilaian"} paling lambat {dueLabel(st.due)}
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {st.makeup && <Badge>Susulan</Badge>}
-                  {st.state === "published" ? <Badge tone="green">Terbit</Badge> : st.state === "draft" ? <Badge tone="amber">Draf</Badge> : <Badge tone={st.overdue ? "red" : "amber"}>Belum dinilai</Badge>}
-                </div>
-              </div>
-              <AssessmentForm
-                batchId={sheet.batch.id}
-                studentId={st.student_id}
-                studentName={st.full_name}
-                kind={kind}
-                indicators={sheet.indicators}
-                initial={st.assessment ? { scores: st.assessment.scores, note: st.assessment.note } : null}
-                published={st.state === "published"}
-                locked={st.locked}
-              />
-            </Panel>
-          ))}
+          <Notice>Pilih nama siswa untuk mengisi nilainya. Nilai draf belum terlihat siswa; setelah terbit, nilai tampil di Progres siswa dan wali dan masih bisa diperbaiki sampai laporan akhir diajukan.</Notice>
+          <Panel title={`Siswa (${published}/${sheet.students.length} terbit)`}>
+            {sheet.students.length === 0 ? (
+              <EmptyState icon="users" title="Belum ada siswa aktif" />
+            ) : (
+              <ul className="space-y-2">
+                {sheet.students.map((s) => (
+                  <li key={s.student_id}>
+                    <Link href={`${sheetHref}&siswa=${s.student_id}`} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-orange/20 px-4 py-3 hover:border-orange/60">
+                      <span>
+                        <span className="block font-bold text-white">{s.full_name}</span>
+                        <span className={`block text-xs ${s.overdue ? "font-bold text-rose-300" : "text-amber-200/70"}`}>
+                          {s.state === "published" ? "Sudah terbit" : `Batas ${dueLabel(s.due)}`}
+                          {s.makeup ? " · susulan (tidak hadir)" : ""}
+                        </span>
+                      </span>
+                      <span className="flex items-center gap-2">
+                        <AssessmentStateBadge st={s} />
+                        <span className="text-xs font-black text-orange">{s.state === "published" ? "Lihat →" : "Nilai →"}</span>
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Panel>
         </>
       )}
     </div>
@@ -147,6 +188,9 @@ function ReportBody({ summary, levels, strengths, improvements, recommendations 
         <div>
           <p className="mb-2 text-xs font-black uppercase tracking-[0.18em] text-amber-200/80">Level akhir per keterampilan</p>
           <LevelChips levels={levels} />
+          <div className="mt-3">
+            <LevelGuide current={overallReportLevel(levels)} withC1 />
+          </div>
         </div>
       )}
       {strengths && (

@@ -209,9 +209,39 @@ body {
     color: rgba(245, 130, 32, 0.5);
     font-weight: 500;
   }
+  /* Input tanggal/jam: kalender bawaan browser bertema gelap, ikonnya oranye dan jelas terlihat. */
+  .field[type="date"],
+  .field[type="datetime-local"],
+  .field[type="time"],
+  .field[type="month"] {
+    color-scheme: dark;
+    cursor: pointer;
+  }
+  .field::-webkit-calendar-picker-indicator {
+    opacity: 1;
+    cursor: pointer;
+    width: 1.15rem;
+    height: 1.15rem;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23F58220' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 3v4m8-4v4M4 9h16M5 5h14a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V6a1 1 0 011-1z'/%3E%3C/svg%3E") center / contain no-repeat;
+  }
+
+  .toast-in {
+    animation: toastIn 0.2s ease-out;
+  }
 
   .fade-in {
     animation: fadeIn 0.25s ease-out;
+  }
+}
+
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 

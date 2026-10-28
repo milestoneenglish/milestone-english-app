@@ -37,7 +37,7 @@ async function makeUser(who, meta = {}, roles = []) {
   created.users.push(data.user.id);
   for (const role of roles) await admin.from("user_roles").insert({ user_id: data.user.id, role });
   if (roles.length) await admin.from("profiles").update({ full_name: meta.full_name ?? who }).eq("id", data.user.id);
-  return { id: data.user.id, email: email(who), password: pw, name: meta.full_name };
+  return { id: data.user.id, email: email(who), password: pw, name: meta.full_name, team: roles.length > 0 };
 }
 
 async function shot(page, name) {
@@ -45,7 +45,7 @@ async function shot(page, name) {
 }
 
 async function login(page, user) {
-  await page.goto(`${BASE}/masuk`);
+  await page.goto(`${BASE}/${user.team ? "tim" : "masuk"}`);
   await page.getByLabel("Email", { exact: true }).fill(user.email);
   await page.getByPlaceholder("Password").fill(user.password);
   await page.getByRole("button", { name: "Masuk", exact: true }).click();
@@ -288,8 +288,9 @@ try {
     if (originalPayment) await admin.from("site_settings").update({ value: originalPayment.value, updated_by: null }).eq("key", "payment");
     else await admin.from("site_settings").delete().eq("key", "payment");
     await admin.from("audit_log").delete().in("actor_id", created.users);
-    await admin.from("audit_log").delete().in("entity_id", [...created.users, ...created.batches]);
     for (const id of new Set(created.users)) await admin.auth.admin.deleteUser(id);
+    // Setelah akun dihapus, karena penghapusan akun ikut menulis audit (role dicabut).
+    await admin.from("audit_log").delete().in("entity_id", [...created.users, ...created.batches]);
     console.log("Data uji dibersihkan, rekening dikembalikan seperti semula.");
   }
   const failed = results.filter((r) => !r.ok);

@@ -2,15 +2,21 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { signOut } from "@/app/portal/actions";
+import { badgesAction, inboxAction } from "@/app/portal/inbox-actions";
 import { Icon } from "@/components/icons";
 import { Logo } from "@/components/logo";
+import type { Badges } from "@/lib/badges";
+import type { InboxSummary } from "@/lib/inbox";
 import { ROLE_LABEL, type MenuItem, type Role } from "@/lib/roles";
+import { NotificationBell } from "./notification-bell";
 
-type Props = { role: Role; roles: Role[]; menu: MenuItem[]; name: string; email: string; children: React.ReactNode };
+type Props = { role: Role; roles: Role[]; menu: MenuItem[]; name: string; email: string; badges: Badges; inbox: InboxSummary; children: React.ReactNode };
 
-function Sidebar({ role, roles, menu, onNavigate }: { role: Role; roles: Role[]; menu: MenuItem[]; onNavigate?: () => void }) {
+const REFRESH_MS = 60000;
+
+function Sidebar({ role, roles, menu, badges, onNavigate }: { role: Role; roles: Role[]; menu: MenuItem[]; badges: Badges; onNavigate?: () => void }) {
   const pathname = usePathname();
   const base = `/portal/${role}`;
 
@@ -58,7 +64,15 @@ function Sidebar({ role, roles, menu, onNavigate }: { role: Role; roles: Role[];
               }`}
             >
               <Icon name={item.icon} className="h-4 w-4" />
-              {item.label}
+              <span className="flex-1">{item.label}</span>
+              {(badges[item.slug] ?? 0) > 0 && (
+                <span
+                  className={`flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-black ${active ? "bg-white text-orange" : "bg-orange text-navy"}`}
+                  aria-label={`${badges[item.slug]} perlu dicek`}
+                >
+                  {badges[item.slug] > 99 ? "99+" : badges[item.slug]}
+                </span>
+              )}
             </Link>
           );
         })}
@@ -66,6 +80,7 @@ function Sidebar({ role, roles, menu, onNavigate }: { role: Role; roles: Role[];
 
       <div className="mt-auto space-y-1 border-t border-slate-800/80 pt-4">
         <form action={signOut}>
+          <input type="hidden" name="to" value={role === "student" || role === "guardian" ? "/" : "/tim"} />
           <button className="flex w-full items-center gap-3.5 rounded-xl px-4 py-2 text-xs font-medium text-slate-400 transition hover:bg-rose-500/10 hover:text-rose-400">
             <Icon name="logout" className="h-4 w-4" /> Keluar
           </button>
@@ -75,9 +90,30 @@ function Sidebar({ role, roles, menu, onNavigate }: { role: Role; roles: Role[];
   );
 }
 
-export function PortalShell({ role, roles, menu, name, email, children }: Props) {
+export function PortalShell({ role, roles, menu, name, email, badges: initialBadges, inbox: initialInbox, children }: Props) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  const [badges, setBadges] = useState(initialBadges);
+  const [inbox, setInbox] = useState(initialInbox);
+
+  // Angka menu dan lonceng diperbarui setiap pindah halaman, setelah halaman dimuat ulang, dan tiap menit.
+  useEffect(() => setBadges(initialBadges), [initialBadges]);
+  useEffect(() => setInbox(initialInbox), [initialInbox]);
+  const [loadedAt] = useState(pathname);
+  useEffect(() => {
+    let alive = true;
+    const refresh = () =>
+      Promise.all([badgesAction(role), inboxAction()])
+        .then(([b, i]) => alive && (setBadges(b), setInbox(i)))
+        .catch(() => {});
+    // Halaman pertama sudah membawa angka dari server; pindah halaman berikutnya memuat ulang.
+    if (pathname !== loadedAt) void refresh();
+    const timer = setInterval(refresh, REFRESH_MS);
+    return () => {
+      alive = false;
+      clearInterval(timer);
+    };
+  }, [role, pathname, loadedAt]);
   const current = menu.find((m) => pathname === (m.slug ? `/portal/${role}/${m.slug}` : `/portal/${role}`));
   const initials = name
     .split(/\s+/)
@@ -89,7 +125,7 @@ export function PortalShell({ role, roles, menu, name, email, children }: Props)
   return (
     <div className="flex h-screen overflow-hidden bg-navy-dark text-slate-100">
       <aside className="hidden h-full w-64 shrink-0 border-r border-slate-800/80 bg-navy-side p-5 lg:block xl:w-72">
-        <Sidebar role={role} roles={roles} menu={menu} />
+        <Sidebar role={role} roles={roles} menu={menu} badges={badges} />
       </aside>
 
       {open && (
@@ -99,7 +135,7 @@ export function PortalShell({ role, roles, menu, name, email, children }: Props)
             <button onClick={() => setOpen(false)} className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-slate-800 text-slate-300" aria-label="Tutup menu">
               <Icon name="close" className="h-4 w-4" />
             </button>
-            <Sidebar role={role} roles={roles} menu={menu} onNavigate={() => setOpen(false)} />
+            <Sidebar role={role} roles={roles} menu={menu} badges={badges} onNavigate={() => setOpen(false)} />
           </div>
         </div>
       )}
@@ -117,6 +153,7 @@ export function PortalShell({ role, roles, menu, name, email, children }: Props)
             </div>
           </div>
           <div className="flex items-center gap-3">
+            <NotificationBell summary={inbox} onChange={setInbox} role={role} />
             <div className="hidden text-right sm:block">
               <p className="text-xs font-bold text-white">{name}</p>
               <p className="text-[11px] text-slate-400">{email}</p>

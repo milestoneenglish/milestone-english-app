@@ -40,7 +40,7 @@ async function makeUser(who, meta = {}, roles = []) {
   created.users.push(data.user.id);
   for (const role of roles) await admin.from("user_roles").insert({ user_id: data.user.id, role });
   if (roles.length) await admin.from("profiles").update({ full_name: meta.full_name ?? who }).eq("id", data.user.id);
-  return { id: data.user.id, email: email(who), password: pw, name: meta.full_name };
+  return { id: data.user.id, email: email(who), password: pw, name: meta.full_name, team: roles.length > 0 };
 }
 
 async function shot(page, name) {
@@ -51,7 +51,7 @@ async function shot(page, name) {
 async function login(page, user) {
   const portal = /\/portal\/(student|guardian|tutor|lead|admin|owner)/;
   for (let attempt = 1; ; attempt++) {
-    await page.goto(`${BASE}/masuk`);
+    await page.goto(`${BASE}/${user.team ? "tim" : "masuk"}`);
     await page.getByLabel("Email", { exact: true }).fill(user.email);
     await page.getByPlaceholder("Password").fill(user.password);
     await page.getByRole("button", { name: "Masuk", exact: true }).click();
@@ -379,8 +379,9 @@ try {
     }
 
     await admin.from("audit_log").delete().in("actor_id", created.users.length ? created.users : [NONE]);
-    await admin.from("audit_log").delete().in("entity_id", entityIds);
     for (const id of new Set(created.users)) await admin.auth.admin.deleteUser(id);
+    // Setelah akun dihapus, karena penghapusan akun ikut menulis audit (role dicabut).
+    await admin.from("audit_log").delete().in("entity_id", entityIds);
     console.log("Data uji dibersihkan, kurikulum English Zero dikembalikan seperti semula.");
   }
   const failed = results.filter((r) => !r.ok);

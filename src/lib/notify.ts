@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 // Notifikasi email (Resend) dan WhatsApp (Fonnte). Setiap pesan dicatat di tabel notifications;
@@ -36,6 +37,11 @@ export const TEMPLATES = {
     subject: `Bukti bayar baru: ${d.number}`,
     lines: [`${d.name} mengunggah bukti transfer ${rupiah(d.amount)} untuk ${d.number}.`, "Mohon verifikasi dari menu Pembayaran."],
     cta: { label: "Verifikasi pembayaran", path: "/portal/admin/pembayaran" },
+  }),
+  payment_reminder: (d: { number: string; description: string; amount: number; due: string }): Message => ({
+    subject: `Pengingat pembayaran ${d.number}`,
+    lines: [`Tagihan ${d.number} untuk ${d.description} sebesar ${rupiah(d.amount)} belum kami terima.`, `Batas pembayaran: ${d.due}. Setelah transfer, unggah bukti transfer di portal supaya kursi tidak dilepas.`],
+    cta: { label: "Bayar dan unggah bukti", path: "/portal" },
   }),
   payment_verified: (d: { number: string; program: string; name: string; start: string; schedule: string }): Message => ({
     subject: `Pembayaran terverifikasi, kelas ${d.program} aktif`,
@@ -144,6 +150,7 @@ export const TEMPLATE_INFO: Partial<Record<TemplateKey, { label: string; to: str
   placement_submitted: { label: "Placement test diterima", to: "Siswa/wali" },
   placement_published: { label: "Hasil placement terbit", to: "Siswa/wali" },
   invoice_created: { label: "Tagihan dibuat", to: "Siswa/wali" },
+  payment_reminder: { label: "Pengingat pembayaran (WhatsApp dari admin)", to: "Siswa/wali" },
   proof_submitted: { label: "Bukti bayar masuk", to: "Admin" },
   payment_verified: { label: "Pembayaran terverifikasi", to: "Siswa/wali" },
   payment_rejected: { label: "Bukti bayar ditolak", to: "Siswa/wali" },
@@ -183,12 +190,13 @@ const fill = (text: string, data: Record<string, unknown>) =>
     return typeof v === "string" ? v : all;
   });
 
-async function templateOverrides(): Promise<Partial<Record<TemplateKey, EditableTemplate>>> {
+// Dibaca sekali per halaman (misalnya antrean WhatsApp yang menyusun banyak pesan sekaligus).
+const templateOverrides = cache(async (): Promise<Partial<Record<TemplateKey, EditableTemplate>>> => {
   const { data } = await createAdminClient().from("site_settings").select("value").eq("key", "notification_templates").maybeSingle();
   return (data?.value ?? {}) as Partial<Record<TemplateKey, EditableTemplate>>;
-}
+});
 
-async function buildMessage<K extends TemplateKey>(template: K, data: TemplateData<K>): Promise<Message> {
+export async function buildMessage<K extends TemplateKey>(template: K, data: TemplateData<K>): Promise<Message> {
   const base = (TEMPLATES[template] as (d: TemplateData<K>) => Message)(data);
   const custom = TEMPLATE_INFO[template] ? (await templateOverrides())[template] : undefined;
   if (!custom) return base;
@@ -234,11 +242,16 @@ async function sendEmail(to: string, m: Message) {
   if (!res.ok) throw new Error(`Resend ${res.status}: ${(await res.text()).slice(0, 200)}`);
 }
 
+// Teks pesan WhatsApp: judul tebal, isi, lalu link portal. Dipakai Fonnte dan tombol "Kirim via WhatsApp".
+export function whatsappText(m: Message) {
+  return `*${m.subject}*\n\n${plainText(m)}`;
+}
+
 async function sendWhatsapp(phone: string, m: Message) {
   const res = await fetch("https://api.fonnte.com/send", {
     method: "POST",
     headers: { Authorization: process.env.FONNTE_TOKEN! },
-    body: new URLSearchParams({ target: phone.replace(/\D/g, ""), message: `*${m.subject}*\n\n${plainText(m)}` }),
+    body: new URLSearchParams({ target: phone.replace(/\D/g, ""), message: whatsappText(m) }),
     signal: AbortSignal.timeout(8000),
   });
   const json = (await res.json().catch(() => ({}))) as { status?: boolean; reason?: string };
@@ -254,7 +267,23 @@ export async function notify<K extends TemplateKey>(template: K, recipientIds: (
     const admin = createAdminClient();
     const { data: profiles } = await admin.from("profiles").select("id, email, phone, status").in("id", ids);
     const message = await buildMessage(template, data);
-    const jobs: { recipient_id: string; channel: "email" | "whatsapp"; destination: string; send: () => Promise<void>; ready: boolean }[] = [];
+    // Lonceng notifikasi di portal: selalu tercatat, terlepas dari email/WhatsApp.
+    const inbox = (profiles ?? [])
+      .filter((p) => p.status === "active")
+      .map((p) => ({
+        recipient_id: p.id,
+        template,
+        title: message.subject.slice(0, 200),
+        body: message.lines.join(" ").slice(0, 2000),
+        link: message.cta?.path ?? null,
+        entity: entity?.type ?? null,
+        entity_id: entity?.id ?? null,
+      }));
+    if (inbox.length) {
+      const { error } = await admin.from("inbox").insert(inbox);
+      if (error) console.error("Notifikasi portal gagal dicatat", error.message);
+    }
+    const jobs:{ recipient_id: string; channel: "email" | "whatsapp"; destination: string; send: () => Promise<void>; ready: boolean }[] = [];
     for (const p of profiles ?? []) {
       if (p.status !== "active") continue;
       if (p.email) jobs.push({ recipient_id: p.id, channel: "email", destination: p.email, send: () => sendEmail(p.email, message), ready: emailConfigured() });

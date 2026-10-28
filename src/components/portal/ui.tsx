@@ -69,7 +69,14 @@ export function Notice({ tone = "amber", children }: { tone?: "amber" | "red" | 
   return <p className={`rounded-xl border px-4 py-3 text-sm font-bold ${cls}`}>{children}</p>;
 }
 
-const DATE_FMT = new Intl.DateTimeFormat("id-ID", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Jakarta" });
+// Sapaan Beranda menurut jam WIB saat halaman dibuka.
+export function greeting(name: string, now = new Date()) {
+  const hour = (now.getUTCHours() + 7) % 24;
+  const part = hour >= 4 && hour < 11 ? "pagi" : hour >= 11 && hour < 15 ? "siang" : hour >= 15 && hour < 18 ? "sore" : "malam";
+  return `Selamat ${part}, ${name}!`;
+}
+
+const DATE_FMT =new Intl.DateTimeFormat("id-ID", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Jakarta" });
 
 export function formatDateTime(iso: string | null | undefined) {
   return iso ? `${DATE_FMT.format(new Date(iso))} WIB` : "-";

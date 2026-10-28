@@ -12,9 +12,10 @@ import {
   setStaffActiveAction,
   updateStaffAction,
 } from "@/app/portal/ops-actions";
-import { EXPENSE_CATEGORIES, EXPENSE_LABEL, PROGRAM_CATEGORIES, PROGRAM_STATUS, STAFF_ROLES, type ExpenseCategory, type StaffRole } from "@/lib/ops";
+import { EXPENSE_CATEGORIES, EXPENSE_LABEL, PROGRAM_CATEGORIES, PROGRAM_STATUS, primaryRole, rolesFrom, STAFF_ROLES, type ExpenseCategory, type StaffRole } from "@/lib/ops";
 import { ROLE_LABEL } from "@/lib/roles";
 import { createClient } from "@/lib/supabase/client";
+import { Modal } from "../modal";
 import { danger, ErrorText, Field, ghost, useAction } from "./curriculum-forms";
 
 // ---------------------------------------------------------------------------
@@ -29,20 +30,33 @@ const ROLE_HINT: Record<StaffRole, string> = {
 };
 
 function RolePicker({ value, onChange, label }: { value: StaffRole[]; onChange: (v: StaffRole[]) => void; label: string }) {
+  const [initial] = useState(value);
+  const primary = primaryRole(value);
+  const teaches = value.includes("tutor") && primary !== "tutor";
+  // Kombinasi lama di luar pola "role utama + tutor" dilepas saat disimpan; beri tahu Owner sebelumnya.
+  const dropped = initial.filter((r) => !rolesFrom(primaryRole(initial), initial.includes("tutor")).includes(r));
   return (
-    <fieldset>
+    <fieldset className="space-y-3">
       <legend className="mb-2 text-xs font-bold text-amber-100">{label}</legend>
-      <div className="grid gap-2 sm:grid-cols-2">
+      <select value={primary} onChange={(e) => onChange(rolesFrom(e.target.value as StaffRole, teaches))} className="field" required aria-label="Role utama">
+        <option value="">Pilih role utama</option>
         {STAFF_ROLES.map((r) => (
-          <label key={r} className="flex cursor-pointer items-start gap-3 rounded-xl border border-orange/20 p-3 text-sm has-[:checked]:border-orange">
-            <input type="checkbox" className="mt-1 accent-orange-500" checked={value.includes(r)} onChange={(e) => onChange(e.target.checked ? [...value, r] : value.filter((x) => x !== r))} />
-            <span>
-              <span className="block font-bold text-white">{ROLE_LABEL[r]}</span>
-              <span className="block text-xs text-amber-200/70">{ROLE_HINT[r]}</span>
-            </span>
-          </label>
+          <option key={r} value={r}>
+            {ROLE_LABEL[r]}
+          </option>
         ))}
-      </div>
+      </select>
+      {primary && <p className="text-xs text-amber-200/70">{ROLE_HINT[primary]}</p>}
+      {primary && primary !== "tutor" && (
+        <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-orange/20 p-3 text-sm has-[:checked]:border-orange">
+          <input type="checkbox" className="mt-1 accent-orange-500" checked={teaches} onChange={(e) => onChange(rolesFrom(primary, e.target.checked))} />
+          <span>
+            <span className="block font-bold text-white">Juga mengajar sebagai tutor</span>
+            <span className="block text-xs text-amber-200/70">Menu Tutor ikut tampil; pindah role dari menu kiri atas setelah masuk.</span>
+          </span>
+        </label>
+      )}
+      {dropped.length > 0 && <p className="text-xs font-bold text-amber-200">Role lain ({dropped.map((r) => ROLE_LABEL[r]).join(", ")}) akan dilepas saat disimpan.</p>}
     </fieldset>
   );
 }
@@ -126,7 +140,7 @@ export function StaffEditor({ staff }: { staff: { id: string; full_name: string;
         onSubmit={(e) => {
           e.preventDefault();
           setMsg("");
-          act(() => updateStaffAction(staff.id, f), done("Data staf tersimpan"));
+          act(() => updateStaffAction(staff.id, f), done("Data staf tersimpan"), "Data staf tersimpan");
         }}
       >
         <div className="grid gap-4 sm:grid-cols-2">
@@ -169,7 +183,7 @@ export function StaffEditor({ staff }: { staff: { id: string; full_name: string;
             <div className="space-y-3 rounded-xl border border-rose-400/40 p-4">
               <p className="text-sm text-amber-100">Staf yang dinonaktifkan langsung keluar dan tidak bisa masuk lagi sampai diaktifkan kembali. Datanya tetap tersimpan.</p>
               <div className="flex gap-2">
-                <button type="button" disabled={pending} onClick={() => act(() => setStaffActiveAction(staff.id, false), done("Staf dinonaktifkan"))} className={danger}>
+                <button type="button" disabled={pending} onClick={() => act(() => setStaffActiveAction(staff.id, false), done("Staf dinonaktifkan"), "Staf dinonaktifkan")} className={danger}>
                   Ya, nonaktifkan
                 </button>
                 <button type="button" onClick={() => setConfirm(false)} className={ghost}>
@@ -183,7 +197,7 @@ export function StaffEditor({ staff }: { staff: { id: string; full_name: string;
             </button>
           )
         ) : (
-          <button type="button" disabled={pending} onClick={() => act(() => setStaffActiveAction(staff.id, true), done("Staf diaktifkan kembali"))} className={ghost}>
+          <button type="button" disabled={pending} onClick={() => act(() => setStaffActiveAction(staff.id, true), done("Staf diaktifkan kembali"), "Staf diaktifkan kembali")} className={ghost}>
             Aktifkan kembali
           </button>
         )}
@@ -392,13 +406,13 @@ export function ExpenseActions({ id, hasReceipt }: { id: string; hasReceipt: boo
   return (
     <span className="inline-flex flex-wrap items-center gap-2">
       {hasReceipt && (
-        <button type="button" disabled={pending} onClick={() => act(() => receiptUrlAction(id), (res) => "url" in res && window.open(res.url, "_blank", "noopener,noreferrer"))} className={ghost}>
+        <button type="button" disabled={pending} onClick={() => act(() => receiptUrlAction(id), (res) => "url" in res && window.open(res.url, "_blank", "noopener,noreferrer"), false)} className={ghost}>
           Nota
         </button>
       )}
       {confirm ? (
         <>
-          <button type="button" disabled={pending} onClick={() => act(() => deleteExpenseAction(id))} className={danger}>
+          <button type="button" disabled={pending} onClick={() => act(() => deleteExpenseAction(id), undefined, "Dihapus")} className={danger}>
             Ya, hapus
           </button>
           <button type="button" onClick={() => setConfirm(false)} className={ghost}>
@@ -412,5 +426,37 @@ export function ExpenseActions({ id, hasReceipt }: { id: string; hasReceipt: boo
       )}
       <ErrorText error={error} />
     </span>
+  );
+}
+
+export function StaffCreateButton() {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button type="button" onClick={() => setOpen(true)} className="btn-orange rounded-full px-5 py-2.5 text-sm">
+        + Tambah staf
+      </button>
+      {open && (
+        <Modal title="Tambah staf" onClose={() => setOpen(false)} wide>
+          <StaffCreateForm />
+        </Modal>
+      )}
+    </>
+  );
+}
+
+export function StaffEditButton({ staff }: { staff: Parameters<typeof StaffEditor>[0]["staff"] }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button type="button" onClick={() => setOpen(true)} className="rounded-full border border-orange/40 px-4 py-1.5 text-xs font-black text-orange hover:bg-orange/10">
+        Ubah
+      </button>
+      {open && (
+        <Modal title={`Ubah ${staff.full_name}`} onClose={() => setOpen(false)} wide>
+          <StaffEditor staff={staff} />
+        </Modal>
+      )}
+    </>
   );
 }

@@ -3,6 +3,7 @@ import { ClassError, dbError } from "@/lib/classes";
 import { BUCKETS, fileExists, fileExtension, removeFiles, signedDownload, signedUpload } from "@/lib/storage";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { ROLE_LABEL, ROLE_PRIORITY, type Role } from "@/lib/roles";
 import { createZip, toCsv } from "@/lib/zip";
 import { EXPENSE_CATEGORIES, EXPENSE_LABEL, PROGRAM_CATEGORIES, STAFF_ROLES, type ExpenseCategory, type PeriodKey, type StaffRole } from "@/lib/ops";
 
@@ -225,9 +226,9 @@ export async function saveProgram(id: string | null, input: ProgramInput) {
   return data.id as string;
 }
 
-export async function updateProgramDescription(programId: string, outcome: string, evidence: string) {
+export async function updateProgramDescription(programId: string, outcome: string, evidence: string, outcomeEn = "", evidenceEn = "") {
   const supabase = await createClient();
-  const { error } = await supabase.rpc("update_program_description", { p_program: programId, p_outcome: outcome, p_evidence: evidence });
+  const { error } = await supabase.rpc("update_program_description", { p_program: programId, p_outcome: outcome, p_evidence: evidence, p_outcome_en: outcomeEn, p_evidence_en: evidenceEn });
   if (error) dbError(error, "Deskripsi program gagal disimpan.");
 }
 
@@ -363,12 +364,26 @@ export async function auditLog(filter: AuditFilter): Promise<{ rows: AuditRow[];
   };
 }
 
-export async function auditFilters() {
+export type AuditActorGroup = { role: Role | "none"; label: string; people: { id: string; name: string; email: string }[] };
+
+// Semua akun untuk filter "Oleh", dikelompokkan menurut role utamanya (urutan Owner sampai Siswa).
+export async function auditFilters(): Promise<{ groups: AuditActorGroup[] }> {
   const admin = createAdminClient();
-  const { data: actors } = await admin.from("audit_log").select("actor_id").not("actor_id", "is", null).order("created_at", { ascending: false }).limit(2000);
-  const ids = [...new Set((actors ?? []).map((a) => a.actor_id as string))];
-  const { data: people } = ids.length ? await admin.from("profiles").select("id, full_name, email").in("id", ids) : { data: [] };
-  return { actors: (people ?? []).map((p) => ({ id: p.id as string, name: (p.full_name || p.email) as string })).sort((a, b) => a.name.localeCompare(b.name)) };
+  const [{ data: people }, { data: roles }] = await Promise.all([
+    admin.from("profiles").select("id, full_name, email").order("full_name").limit(5000),
+    admin.from("user_roles").select("user_id, role").limit(10000),
+  ]);
+  const roleOf = (id: string) => ROLE_PRIORITY.find((r) => (roles ?? []).some((x) => x.user_id === id && x.role === r)) ?? "none";
+  const groups = new Map<Role | "none", AuditActorGroup["people"]>();
+  for (const p of people ?? []) {
+    const key = roleOf(p.id as string);
+    groups.set(key, [...(groups.get(key) ?? []), { id: p.id as string, name: (p.full_name || p.email) as string, email: (p.email ?? "") as string }]);
+  }
+  return {
+    groups: [...ROLE_PRIORITY, "none" as const]
+      .filter((r) => groups.has(r))
+      .map((r) => ({ role: r, label: r === "none" ? "Tanpa role" : ROLE_LABEL[r], people: groups.get(r)!.sort((x, y) => x.name.localeCompare(y.name)) })),
+  };
 }
 
 // ---------------------------------------------------------------------------

@@ -1,11 +1,19 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useCallback, useEffect, useState } from "react";
+import { Modal } from "../modal";
+import { toast } from "@/components/toast";
 import { addChildAction, type FormState } from "@/app/portal/student-actions";
 import { LEARNING_GOALS } from "@/lib/placement/levels";
 
-export function AddChildForm({ programs }: { programs: { id: string; name: string }[] }) {
+export function AddChildForm({ programs, onDone }: { programs: { id: string; name: string }[]; onDone?: () => void }) {
   const [state, action, pending] = useActionState<FormState, FormData>(addChildAction, { error: "", ok: false });
+  useEffect(() => {
+    if (state.ok) {
+      toast.success("Anak ditambahkan. Mulai placement test dari daftar anak.");
+      onDone?.();
+    } else if (state.error) toast.error(state.error);
+  }, [state, onDone]);
   return (
     <form action={action} className="grid gap-4 sm:grid-cols-2">
       <label className="block">
@@ -48,11 +56,28 @@ export function AddChildForm({ programs }: { programs: { id: string; name: strin
       </label>
       <div className="sm:col-span-2">
         {state.error && <p className="mb-3 text-sm font-bold text-rose-300">{state.error}</p>}
-        {state.ok && <p className="mb-3 text-sm font-bold text-emerald-300">Anak berhasil ditambahkan.</p>}
+        {state.ok && <p className="mb-3 text-sm font-bold text-emerald-300">Anak berhasil ditambahkan. Mulai placement test dari daftar di atas.</p>}
         <button disabled={pending} className="btn-orange rounded-xl px-6 py-3 text-sm">
           {pending ? "Menyimpan..." : "Tambah anak"}
         </button>
       </div>
     </form>
+  );
+}
+
+export function AddChildButton({ programs }: { programs: { id: string; name: string }[] }) {
+  const [open, setOpen] = useState(false);
+  const close = useCallback(() => setOpen(false), []);
+  return (
+    <>
+      <button type="button" onClick={() => setOpen(true)} className="btn-orange rounded-full px-5 py-2.5 text-sm">
+        + Tambah anak
+      </button>
+      {open && (
+        <Modal title="Tambah anak" onClose={close}>
+          <AddChildForm programs={programs} onDone={close} />
+        </Modal>
+      )}
+    </>
   );
 }

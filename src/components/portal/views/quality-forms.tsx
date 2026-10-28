@@ -86,7 +86,7 @@ export function SurveyForm({ enrollmentId, tutor }: { enrollmentId: string; tuto
       className="space-y-3"
       onSubmit={(e) => {
         e.preventDefault();
-        act(() => submitSurveyAction(enrollmentId, rating, comment), () => router.refresh());
+        act(() => submitSurveyAction(enrollmentId, rating, comment), () => router.refresh(), "Terima kasih, penilaianmu tersimpan");
       }}
     >
       <div role="radiogroup" aria-label={`Nilai untuk ${tutor}`} className="flex flex-wrap gap-2">

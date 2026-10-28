@@ -8,6 +8,8 @@ export const AUDIT_ACTION: Record<string, string> = {
   staff_activated: "Mengaktifkan staf",
   staff_deactivated: "Menonaktifkan staf",
   staff_password_reset: "Mengganti password staf",
+  learner_password_reset: "Membuat password sementara siswa/wali",
+  whatsapp_sent: "Mengirim kabar lewat WhatsApp",
   program_created: "Menambah program",
   program_updated: "Mengubah harga/status program",
   program_description_updated: "Mengubah deskripsi program",

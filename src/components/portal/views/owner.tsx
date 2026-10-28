@@ -22,8 +22,9 @@ import {
 } from "@/lib/owner";
 import { ROLE_LABEL } from "@/lib/roles";
 import type { Viewer } from "@/lib/session";
-import { Badge, EmptyState, formatDateTime, Notice, PageHeader, Panel, Tabs } from "../ui";
-import { ExpenseActions, ExpenseForm, ProgramForm, StaffCreateForm, StaffEditor } from "./owner-forms";
+import { Badge, EmptyState, formatDateTime, Notice, greeting, PageHeader, Panel, Tabs } from "../ui";
+import { AuditActorSelect } from "./audit-actor-select";
+import { ExpenseActions, ExpenseForm, ProgramForm, StaffCreateButton, StaffEditButton } from "./owner-forms";
 
 // Menu Owner: dashboard bisnis, staf dan role, program dan harga, keuangan, audit log.
 
@@ -109,7 +110,7 @@ export async function OwnerHome({ viewer, params }: { viewer: Viewer; params: Re
   ];
   return (
     <div className="fade-in space-y-6">
-      <PageHeader title={`Halo, ${firstName}!`} subtitle="Ringkasan bisnis Milestone English." />
+      <PageHeader title={greeting(firstName)} subtitle="Ringkasan bisnis Milestone English." />
       <Tabs tabs={Object.entries(PERIODS).map(([k, label]) => ({ key: k, label, href: `/portal/owner?periode=${k}` }))} active={period} />
       {backupOld && (
         <Notice>
@@ -198,35 +199,28 @@ export async function OwnerStaff({ viewer }: { viewer: Viewer }) {
   const staff = await listStaff();
   return (
     <div className="fade-in space-y-6">
-      <PageHeader title="Staf & Role" subtitle="Tambah staf, atur role, ganti password, dan nonaktifkan akun." />
-      <Panel title="Tambah staf">
-        <StaffCreateForm />
-      </Panel>
+      <PageHeader title="Staf & Role" subtitle="Daftar akun tim Milestone. Klik Ubah untuk mengatur role, password, dan status akun." action={<StaffCreateButton />} />
       <Panel title={`Daftar staf (${staff.length})`}>
-        <ul className="space-y-3">
+        <ul className="divide-y divide-orange/10">
           {staff.map((s) => (
-            <li key={s.id}>
-              <details className="group rounded-2xl border border-orange/20 open:border-orange/50">
-                <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-3 px-5 py-4">
-                  <span>
-                    <span className="block font-black text-white">{s.full_name || s.email}</span>
-                    <span className="block text-xs text-amber-200/70">{s.email}</span>
-                  </span>
-                  <span className="flex flex-wrap items-center gap-2">
-                    {s.roles.map((r) => (
-                      <Badge key={r} tone="orange">
-                        {ROLE_LABEL[r]}
-                      </Badge>
-                    ))}
-                    {s.status === "inactive" && <Badge tone="red">Nonaktif</Badge>}
-                    {s.must_change_password && s.status === "active" && <Badge tone="amber">Belum ganti password</Badge>}
-                    {s.id !== viewer.id && <span className="text-xs text-orange group-open:hidden">Ubah ▾</span>}
-                  </span>
-                </summary>
-                <div className="border-t border-orange/15 px-5 py-5">
-                  {s.id === viewer.id ? <p className="text-sm text-slate-400">Ini akunmu sendiri. Role dan status akun sendiri tidak bisa diubah dari sini.</p> : <StaffEditor staff={s} />}
-                </div>
-              </details>
+            <li key={s.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+              <span>
+                <span className="block font-black text-white">
+                  {s.full_name || s.email}
+                  {s.id === viewer.id && <span className="ml-2 text-xs font-bold text-amber-200/70">(kamu)</span>}
+                </span>
+                <span className="block text-xs text-amber-200/70">{s.email}</span>
+              </span>
+              <span className="flex flex-wrap items-center gap-2">
+                {s.roles.map((r) => (
+                  <Badge key={r} tone="orange">
+                    {ROLE_LABEL[r]}
+                  </Badge>
+                ))}
+                {s.status === "inactive" && <Badge tone="red">Nonaktif</Badge>}
+                {s.must_change_password && s.status === "active" && <Badge tone="amber">Belum ganti password</Badge>}
+                {s.id !== viewer.id && <StaffEditButton staff={s} />}
+              </span>
             </li>
           ))}
         </ul>
@@ -420,7 +414,7 @@ export async function OwnerFinance({ params }: { params: Record<string, string |
 export async function OwnerAudit({ params }: { params: Record<string, string | undefined> }) {
   const page = Math.max(1, Number(params.hal) || 1);
   const filter = { actor: params.oleh || undefined, entity: params.data || undefined, from: params.dari || undefined, to: params.sampai || undefined, page };
-  const [{ rows, total }, { actors }] = await Promise.all([auditLog(filter), auditFilters()]);
+  const [{ rows, total }, { groups }] = await Promise.all([auditLog(filter), auditFilters()]);
   const pages = Math.max(1, Math.ceil(total / AUDIT_PAGE));
   const query = (p: number) => {
     const q = new URLSearchParams(Object.entries({ oleh: params.oleh, data: params.data, dari: params.dari, sampai: params.sampai, hal: String(p) }).filter(([, v]) => v) as [string, string][]);
@@ -433,14 +427,7 @@ export async function OwnerAudit({ params }: { params: Record<string, string | u
         <form className="grid gap-3 sm:grid-cols-5 sm:items-end" action="/portal/owner/audit">
           <label className="block text-xs font-bold text-amber-100">
             Oleh
-            <select name="oleh" defaultValue={params.oleh ?? ""} className="field mt-2">
-              <option value="">Semua orang</option>
-              {actors.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.name}
-                </option>
-              ))}
-            </select>
+            <AuditActorSelect groups={groups} value={params.oleh ?? ""} />
           </label>
           <label className="block text-xs font-bold text-amber-100">
             Jenis data

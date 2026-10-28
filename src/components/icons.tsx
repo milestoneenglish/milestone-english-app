@@ -29,6 +29,8 @@ const PATHS: Record<string, string> = {
   close: "M6 6l12 12M18 6L6 18",
   mail: "M4 6h16a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V7a1 1 0 011-1zm0 1l8 6 8-6",
   chevron: "M6 9l6 6 6-6",
+  bell: "M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 00-4-5.7V5a2 2 0 10-4 0v.3A6 6 0 006 11v3.2a2 2 0 01-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9",
+  key: "M15 7a2 2 0 012 2m4 0a6 6 0 01-7.7 5.7L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.6a1 1 0 01.3-.7l6-6A6 6 0 1121 9z",
 };
 
 export function Icon({ name, className = "w-6 h-6" }: { name: IconName | keyof typeof PATHS } & IconProps) {

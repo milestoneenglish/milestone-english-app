@@ -68,14 +68,13 @@ const VIEWS: Partial<Record<Role, Record<string, (p: ViewProps) => Promise<React
     pendaftaran: ({ params }) => AdminRegistrations({ params }),
     "siswa-wali": () => AdminGuardians(),
     bantuan: ({ params }) => AdminSupport({ params }),
-    cms: ({ params }) => CmsPage({ role: "admin", params }),
   },
   owner: {
     "": ({ viewer, params }) => OwnerHome({ viewer, params }),
     staf: ({ viewer }) => OwnerStaff({ viewer }),
     program: () => OwnerPrograms(),
     keuangan: ({ params }) => OwnerFinance({ params }),
-    cms: ({ params }) => CmsPage({ role: "owner", params }),
+    cms: ({ params }) => CmsPage({ params }),
     "kualitas-tutor": ({ params }) => TutorQualityPage({ role: "owner", params }),
     audit: ({ params }) => OwnerAudit({ params }),
     pengaturan: () => OwnerSettings(),
@@ -93,6 +92,8 @@ export default async function PortalSection({
   if (!isRole(role) || (section && section.length > 1)) notFound();
   const slug = section?.[0] ?? "";
   const item = ROLE_MENU[role].find((m) => m.slug === slug);
+  // CMS Website kini khusus Owner; tautan lama Admin diarahkan ke beranda.
+  if (!item && slug === "cms") redirect(`/portal/${role}`);
   if (!item) notFound();
 
   const viewer = await requireViewer();

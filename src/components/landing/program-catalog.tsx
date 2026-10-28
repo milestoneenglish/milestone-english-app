@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
 import { PROGRAM_CATEGORIES, type Program, type ProgramCategory } from "@/data/catalog";
 import type { OpenBatch } from "@/lib/content";
+import { DATE_LOCALE, dict, localePath, type Lang } from "@/lib/i18n";
 
 const CATEGORY_PHOTO: Record<ProgramCategory, string> = {
   "Everyday English": "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=900&q=80",
@@ -23,10 +24,15 @@ const CATEGORY_ICON: Record<ProgramCategory, "mic" | "book" | "star" | "chart"> 
 const rupiah = (value: number) =>
   new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(value);
 
-const BATCH_DATE = new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "short", timeZone: "Asia/Jakarta" });
-const batchDate = (d: string) => BATCH_DATE.format(new Date(`${d}T00:00:00+07:00`));
+const batchDateFor = (lang: Lang) => {
+  const fmt = new Intl.DateTimeFormat(DATE_LOCALE[lang], { day: "numeric", month: "short", timeZone: "Asia/Jakarta" });
+  return (d: string) => fmt.format(new Date(`${d}T00:00:00+07:00`));
+};
 
-export function ProgramCatalog({ programs, batches = [] }: { programs: Program[]; batches?: OpenBatch[] }) {
+export function ProgramCatalog({ programs, batches = [], lang = "id" }: { programs: Program[]; batches?: OpenBatch[]; lang?: Lang }) {
+  const t = dict(lang).catalog;
+  const batchDate = batchDateFor(lang);
+  const signup = (slug: string) => `${localePath(lang, "/daftar")}?program=${slug}`;
   const [filter, setFilter] = useState<ProgramCategory | "all">("all");
   const [selected, setSelected] = useState<Program | null>(null);
   const visible = filter === "all" ? programs : programs.filter((p) => p.category === filter);
@@ -40,7 +46,7 @@ export function ProgramCatalog({ programs, batches = [] }: { programs: Program[]
 
   return (
     <>
-      <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5" role="tablist" aria-label="Kategori program">
+      <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5" role="tablist" aria-label={t.categories}>
         {(["all", ...PROGRAM_CATEGORIES] as const).map((cat) => {
           const active = filter === cat;
           return (
@@ -56,14 +62,14 @@ export function ProgramCatalog({ programs, batches = [] }: { programs: Program[]
                   : "border-orange/30 bg-navy-card/70 text-amber-200/80 hover:border-orange hover:text-white"
               }`}
             >
-              {cat === "all" ? "Semua Program" : cat}
+              {cat === "all" ? t.all : cat}
             </button>
           );
         })}
       </div>
 
       <p className="mt-4 text-xs text-amber-200/70" aria-live="polite">
-        Menampilkan {visible.length} dari {programs.length} program
+        {t.showing(visible.length, programs.length)}
       </p>
 
       <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
@@ -96,19 +102,19 @@ export function ProgramCatalog({ programs, batches = [] }: { programs: Program[]
               <p className="lp-muted mt-3 flex-1 text-sm leading-relaxed">{p.outcome}</p>
               <div className="mt-5 grid grid-cols-2 gap-3 border-t border-orange/20 pt-4 text-xs">
                 <div>
-                  <p className="text-amber-200/70">Level</p>
+                  <p className="text-amber-200/70">{t.level}</p>
                   <p className="mt-1 font-bold text-white">{p.entry_level}</p>
                 </div>
                 <div>
-                  <p className="text-amber-200/70">Kapasitas</p>
-                  <p className="mt-1 font-bold text-white">{p.capacity} peserta</p>
+                  <p className="text-amber-200/70">{t.capacity}</p>
+                  <p className="mt-1 font-bold text-white">{t.learners(p.capacity)}</p>
                 </div>
               </div>
               {(() => {
                 const next = batches.find((b) => b.program_slug === p.slug && b.seats_left > 0);
                 return (
                   <p className="mt-4 rounded-xl border border-orange/25 bg-navy/50 px-3 py-2 text-[11px] font-bold text-amber-100">
-                    {next ? `Batch berikutnya mulai ${batchDate(next.start_date)} · sisa ${next.seats_left} kursi` : "Batch baru segera dibuka"}
+                    {next ? t.nextBatch(batchDate(next.start_date), next.seats_left) : t.batchSoon}
                   </p>
                 );
               })()}
@@ -118,10 +124,10 @@ export function ProgramCatalog({ programs, batches = [] }: { programs: Program[]
               </div>
               <div className="mt-4 grid grid-cols-2 gap-3">
                 <button type="button" onClick={() => setSelected(p)} className="btn-orange w-full rounded-full px-4 py-3 text-xs">
-                  Detail
+                  {t.detail}
                 </button>
-                <Link href={`/daftar?program=${p.slug}`} className="btn-orange w-full rounded-full px-4 py-3 text-center text-xs">
-                  Ambil Slot
+                <Link href={signup(p.slug)} className="btn-orange w-full rounded-full px-4 py-3 text-center text-xs">
+                  {t.takeSlot}
                 </Link>
               </div>
             </div>
@@ -143,7 +149,7 @@ export function ProgramCatalog({ programs, batches = [] }: { programs: Program[]
                 type="button"
                 onClick={() => setSelected(null)}
                 className="btn-orange absolute right-4 top-4 z-20 flex h-11 w-11 items-center justify-center rounded-full"
-                aria-label="Tutup detail program"
+                aria-label={t.closeDetail}
               >
                 <Icon name="close" className="h-5 w-5" />
               </button>
@@ -159,29 +165,29 @@ export function ProgramCatalog({ programs, batches = [] }: { programs: Program[]
             <div className="p-6 sm:p-8">
               <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
                 {[
-                  ["Level", selected.entry_level],
-                  ["Durasi", selected.duration_label],
-                  ["Kapasitas", `${selected.capacity} peserta`],
-                  ["Harga", rupiah(selected.price_idr)],
+                  [t.level, selected.entry_level],
+                  [t.duration, selected.duration_label],
+                  [t.capacity, t.learners(selected.capacity)],
+                  [t.price, rupiah(selected.price_idr)],
                 ].map(([label, value]) => (
                   <div key={label} className="lp-card-soft p-4">
                     <p className="text-xs text-amber-200/70">{label}</p>
-                    <p className={`mt-1 font-black ${label === "Harga" ? "text-orange" : "text-white"}`}>{value}</p>
+                    <p className={`mt-1 font-black ${label === t.price ? "text-orange" : "text-white"}`}>{value}</p>
                   </div>
                 ))}
               </div>
               <div className="mt-7 grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="lp-card-soft p-5">
-                  <h3 className="font-black text-white">Target akhir</h3>
+                  <h3 className="font-black text-white">{t.target}</h3>
                   <p className="lp-muted mt-2 text-sm leading-relaxed">{selected.outcome}</p>
                 </div>
                 <div className="lp-card-soft p-5">
-                  <h3 className="font-black text-white">Bukti progres</h3>
+                  <h3 className="font-black text-white">{t.evidence}</h3>
                   <p className="lp-muted mt-2 text-sm leading-relaxed">{selected.evidence}</p>
                 </div>
               </div>
               <div className="lp-card-soft mt-4 p-5">
-                <h3 className="font-black text-white">Jadwal batch yang dibuka</h3>
+                <h3 className="font-black text-white">{t.openBatches}</h3>
                 {batches.some((b) => b.program_slug === selected.slug) ? (
                   <ul className="mt-2 space-y-2 text-sm">
                     {batches
@@ -189,22 +195,22 @@ export function ProgramCatalog({ programs, batches = [] }: { programs: Program[]
                       .map((b) => (
                         <li key={b.code} className="flex flex-wrap justify-between gap-2 text-amber-100">
                           <span>
-                            Mulai {batchDate(b.start_date)} · {b.schedule_label}
+                            {t.starts(batchDate(b.start_date))} · {b.schedule_label}
                           </span>
-                          <span className={b.seats_left > 0 ? "font-bold text-orange" : "font-bold text-rose-300"}>{b.seats_left > 0 ? `Sisa ${b.seats_left} kursi` : "Penuh"}</span>
+                          <span className={b.seats_left > 0 ? "font-bold text-orange" : "font-bold text-rose-300"}>{b.seats_left > 0 ? t.seatsLeft(b.seats_left) : t.full}</span>
                         </li>
                       ))}
                   </ul>
                 ) : (
-                  <p className="lp-muted mt-2 text-sm leading-relaxed">Batch baru segera dibuka. Daftar dan kerjakan placement test sekarang agar siap memilih jadwal begitu dibuka.</p>
+                  <p className="lp-muted mt-2 text-sm leading-relaxed">{t.batchSoonLong}</p>
                 )}
               </div>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-end">
                 <button type="button" onClick={() => setSelected(null)} className="rounded-full border border-orange/50 px-6 py-3 text-sm font-black text-orange hover:bg-orange/10">
-                  Tutup
+                  {t.close}
                 </button>
-                <Link href={`/daftar?program=${selected.slug}`} className="btn-orange rounded-full px-6 py-3 text-center text-sm">
-                  Ambil Slot
+                <Link href={signup(selected.slug)} className="btn-orange rounded-full px-6 py-3 text-center text-sm">
+                  {t.takeSlot}
                 </Link>
               </div>
             </div>

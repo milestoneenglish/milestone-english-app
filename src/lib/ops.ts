@@ -4,6 +4,16 @@ import type { Role } from "@/lib/roles";
 export const STAFF_ROLES = ["owner", "admin", "lead", "tutor"] as const satisfies readonly Role[];
 export type StaffRole = (typeof STAFF_ROLES)[number];
 
+// Satu role utama, ditambah tutor bila staf juga mengajar (misalnya Academic Lead yang memegang kelas).
+export function primaryRole(roles: StaffRole[]): StaffRole | "" {
+  return STAFF_ROLES.find((r) => roles.includes(r)) ?? "";
+}
+
+export function rolesFrom(primary: StaffRole | "", teaches: boolean): StaffRole[] {
+  if (!primary) return [];
+  return teaches && primary !== "tutor" ? [primary, "tutor"] : [primary];
+}
+
 export const PROGRAM_CATEGORIES = ["Everyday English", "Academic English", "Young Learners", "Professional English"] as const;
 export const PROGRAM_STATUS = { draft: "Draf (belum tampil)", active: "Buka (tampil di website)", archived: "Tutup" } as const;
 

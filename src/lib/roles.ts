@@ -75,7 +75,6 @@ export const ROLE_MENU: Record<Role, MenuItem[]> = {
     { slug: "pembayaran", label: "Pembayaran", icon: "wallet", phase: 2 },
     { slug: "siswa-wali", label: "Siswa & Wali", icon: "shield", phase: 1 },
     { slug: "bantuan", label: "Bantuan", icon: "help", phase: 5 },
-    { slug: "cms", label: "CMS Website", icon: "edit", phase: 5 },
   ],
   lead: [
     { slug: "", label: "Beranda", icon: "home", phase: 3 },

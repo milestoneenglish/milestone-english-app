@@ -43,7 +43,7 @@ async function makeUser(who, meta = {}, roles = []) {
   created.users.push(data.user.id);
   for (const role of roles) await admin.from("user_roles").insert({ user_id: data.user.id, role });
   if (roles.length) await admin.from("profiles").update({ full_name: meta.full_name ?? who }).eq("id", data.user.id);
-  return { id: data.user.id, email: email(who), password: pw, name: meta.full_name };
+  return { id: data.user.id, email: email(who), password: pw, name: meta.full_name, team: roles.length > 0 };
 }
 
 async function shot(page, name) {
@@ -53,7 +53,7 @@ async function shot(page, name) {
 const PORTAL = /\/(portal\/(student|guardian|tutor|lead|admin|owner)|password-baru)/;
 
 async function tryLogin(page, user, pw = user.password, timeout = 30000) {
-  await page.goto(`${BASE}/masuk`);
+  await page.goto(`${BASE}/${user.team ? "tim" : "masuk"}`);
   await page.getByLabel("Email", { exact: true }).fill(user.email);
   await page.getByPlaceholder("Password").fill(pw);
   await page.getByRole("button", { name: "Masuk", exact: true }).click();
@@ -129,7 +129,7 @@ try {
 
   // ---------------------------------------------------------------- Owner: staf dan role
   await open(op, "/portal/owner/staf");
-  const newStaff = { email: email("lead-baru"), password: password() };
+  const newStaff = { email: email("lead-baru"), password: password(), team: true };
   const createPanel = op.locator("section", { has: op.getByRole("heading", { name: "Tambah staf" }) }).last();
   await createPanel.getByLabel("Nama lengkap").fill("Lead Baru Uji");
   await createPanel.getByLabel("Email login").fill(newStaff.email);
@@ -202,52 +202,55 @@ try {
   check("Audit log menampilkan aksi Owner", (await op.getByText("Menambah staf").count()) >= 1 && (await op.getByText("Mengunduh backup").count()) >= 1);
   await shot(op, "04-owner-audit");
 
-  // ---------------------------------------------------------------- Admin: CMS website
-  const ap = await newPage();
-  await login(ap, adm);
-  await open(ap, "/portal/admin/cms?tab=teks");
+  // ---------------------------------------------------------------- Owner: CMS website (khusus Owner sejak Kelompok 3)
+  const cp = op;
+  await open(cp, "/portal/owner/cms?tab=teks");
   const badge = `Uji badge ${RUN}`;
-  await ap.getByLabel("Label kecil di atas judul").fill(badge);
-  await ap.getByRole("button", { name: "Simpan bagian hero" }).click();
-  await ap.getByText("Tersimpan dan tampil di website").first().waitFor({ timeout: 20000 });
-  await ap.getByLabel("Angka 1", { exact: true }).fill("15");
-  await ap.getByLabel("Keterangan 1", { exact: true }).fill(`Program uji ${RUN}`);
-  await ap.getByRole("button", { name: "Simpan teks landing page" }).click();
+  await cp.getByLabel("Label kecil di atas judul").fill(badge);
+  await cp.getByRole("button", { name: "Simpan bagian hero" }).click();
+  await cp.getByText("Tersimpan dan tampil di website").first().waitFor({ timeout: 20000 });
+  await cp.getByLabel("Angka 1", { exact: true }).fill("15");
+  await cp.getByLabel("Keterangan 1", { exact: true }).fill(`Program uji ${RUN}`);
+  await cp.getByRole("button", { name: "Simpan teks landing page" }).click();
   await until(async () => (await admin.from("site_settings").select("value").eq("key", "landing").maybeSingle()).data?.value?.stats?.[0]?.label === `Program uji ${RUN}`, "teks landing tersimpan");
   const lp = await newPage();
   await open(lp, "/");
-  check("Teks hero dan angka kunci yang diubah Admin tampil di website", (await lp.getByText(badge).count()) === 1 && (await lp.getByText(`Program uji ${RUN}`).count()) === 1);
+  check("Teks hero dan angka kunci yang diubah Owner tampil di website", (await lp.getByText(badge).count()) === 1 && (await lp.getByText(`Program uji ${RUN}`).count()) === 1);
 
-  await open(ap, "/portal/admin/cms?tab=gambar");
-  await ap.getByLabel("Ganti Latar hero (paling atas)").setInputFiles({ name: "hero.png", mimeType: "image/png", buffer: PNG });
+  await open(cp, "/portal/owner/cms?tab=gambar");
+  await cp.getByLabel("Ganti Latar hero (paling atas)").setInputFiles({ name: "hero.png", mimeType: "image/png", buffer: PNG });
   await until(async () => (await admin.from("site_settings").select("value").eq("key", "images").maybeSingle()).data?.value?.hero, "gambar hero tersimpan");
   await open(lp, "/");
   const heroStyle = await lp.locator("header#hero").getAttribute("style");
   check("Gambar hero unggahan dipakai di website", Boolean(heroStyle?.includes("site-images")));
-  await ap.reload();
-  await ap.getByRole("button", { name: "Pakai gambar bawaan" }).click();
+  await cp.reload();
+  await cp.getByRole("button", { name: "Pakai gambar bawaan" }).click();
   await until(async () => (await admin.from("site_settings").select("value").eq("key", "images").maybeSingle()).data?.value?.hero === "", "gambar bawaan");
 
-  await open(ap, "/portal/admin/cms?tab=faq");
+  await open(cp, "/portal/owner/cms?tab=faq");
   const question = `Pertanyaan uji ${RUN}?`;
-  await ap.getByLabel("Pertanyaan").first().fill(question);
-  await ap.getByLabel("Jawaban").first().fill("Jawaban uji untuk memastikan FAQ tampil.");
-  await ap.getByRole("button", { name: "Tambah FAQ" }).click();
+  await cp.getByLabel("Pertanyaan").first().fill(question);
+  await cp.getByLabel("Jawaban").first().fill("Jawaban uji untuk memastikan FAQ tampil.");
+  await cp.getByRole("button", { name: "Tambah FAQ" }).click();
   const faq = await until(async () => (await admin.from("faqs").select("id").eq("question", question).maybeSingle()).data, "FAQ tersimpan");
   created.faqs.push(faq.id);
   await open(lp, "/");
-  check("FAQ baru dari Admin tampil di website", (await lp.getByText(question).count()) === 1);
+  check("FAQ baru dari Owner tampil di website", (await lp.getByText(question).count()) === 1);
 
-  await open(ap, "/portal/admin/cms?tab=notifikasi");
-  const tplRow = ap.locator("details", { has: ap.locator("summary", { hasText: "Tiket dibalas" }) });
+  await open(cp, "/portal/owner/pengaturan");
+  const tplRow = cp.locator("details", { has: cp.locator("summary", { hasText: "Tiket dibalas" }) });
   await tplRow.locator("summary").click();
   await tplRow.getByLabel("Judul (subjek email)").fill(`Balasan tiket {number} (uji ${RUN})`);
   await tplRow.getByRole("button", { name: "Simpan template" }).click();
   await tplRow.getByText(/Tersimpan/).waitFor({ timeout: 20000 });
-  await shot(ap, "05-admin-cms-template");
+  await shot(cp, "05-owner-template-pengaturan");
 
+  const ap = await newPage();
+  await login(ap, adm);
   await open(ap, "/portal/owner");
   check("Admin tidak bisa membuka menu Owner", !ap.url().includes("/portal/owner"));
+  await open(ap, "/portal/admin/cms");
+  check("CMS tidak lagi tersedia untuk Admin", ap.url().endsWith("/portal/admin"));
 
   // ---------------------------------------------------------------- Bantuan: siswa membuat tiket, Admin membalas dan menutup
   const sp = await newPage();
@@ -362,8 +365,9 @@ try {
     }
     await admin.from("user_roles").update({ granted_by: null }).in("granted_by", users);
     await admin.from("audit_log").delete().in("actor_id", users);
-    await admin.from("audit_log").delete().in("entity_id", [...entityIds, suBefore.id, ...SETTING_KEYS]).gte("created_at", STARTED);
     for (const id of new Set(created.users)) await admin.auth.admin.deleteUser(id);
+    // Setelah akun dihapus, karena penghapusan akun ikut menulis audit (role dicabut).
+    await admin.from("audit_log").delete().in("entity_id", [...entityIds, suBefore.id, ...SETTING_KEYS]).gte("created_at", STARTED);
     console.log("Data uji dibersihkan; harga program, konten website, dan catatan backup dikembalikan seperti semula.");
   }
   const failed = results.filter((r) => !r.ok);

@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { toast } from "@/components/toast";
 import {
   addMaterialAction,
   addModuleAction,
@@ -49,15 +50,20 @@ export function Field({ label, hint, children }: { label: string; hint?: string;
 }
 
 // Menjalankan aksi server lalu memuat ulang halaman; mengembalikan pesan error bila gagal.
+// Hasilnya juga muncul sebagai pop-up: `success` mengganti teks "Tersimpan", false untuk tanpa pop-up.
 export function useAction() {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [error, setError] = useState("");
-  const act = <T extends { ok: boolean; error?: string }>(fn: () => Promise<T>, after?: (res: T) => void) =>
+  const act = <T extends { ok: boolean; error?: string }>(fn: () => Promise<T>, after?: (res: T) => void, success: string | false = "Tersimpan") =>
     start(async () => {
       setError("");
       const res = await fn();
-      if (!res.ok) return setError(res.error ?? "Terjadi kesalahan.");
+      if (!res.ok) {
+        toast.error(res.error ?? "Terjadi kesalahan.");
+        return setError(res.error ?? "Terjadi kesalahan.");
+      }
+      if (success) toast.success(success);
       if (after) after(res);
       else router.refresh();
     });
@@ -107,7 +113,7 @@ export function CurriculumActions({ id, status, hasDraft }: { id: string; status
             Setelah terbit, Admin bisa memakai kurikulum ini untuk membuka batch. Isi modul dan teks rubrik tetap bisa diubah, tetapi jumlah dan urutan sesi, daftar indikator rubrik, serta titik assessment terkunci. Versi terbit sebelumnya diarsipkan dan tetap dipakai batch yang sudah memakainya.
           </p>
           <div className="flex gap-2">
-            <button disabled={pending} onClick={() => act(() => publishCurriculumAction(id).then((r) => (r.ok && setConfirm(""), r)))} className="btn-orange rounded-full px-5 py-2.5 text-sm">
+            <button disabled={pending} onClick={() => act(() => publishCurriculumAction(id).then((r) => (r.ok && setConfirm(""), r)), undefined, "Kurikulum diterbitkan")} className="btn-orange rounded-full px-5 py-2.5 text-sm">
               {pending ? "Menerbitkan..." : "Ya, terbitkan"}
             </button>
             <button disabled={pending} onClick={() => setConfirm("")} className="rounded-full border border-orange/40 px-5 py-2.5 text-sm font-bold text-amber-100">
@@ -212,7 +218,7 @@ function MaterialList({ materials, editable }: { materials: MaterialRow[]; edita
                 <FileButton kind="material" id={m.id} />
               )}
               {editable && (
-                <button disabled={pending} onClick={() => act(() => deleteMaterialAction(m.id))} className="rounded-full border border-rose-400/50 px-3 py-1 text-[11px] font-black text-rose-300">
+                <button disabled={pending} onClick={() => act(() => deleteMaterialAction(m.id), undefined, "Dihapus")} className="rounded-full border border-rose-400/50 px-3 py-1 text-[11px] font-black text-rose-300">
                   Hapus
                 </button>
               )}
@@ -344,7 +350,7 @@ function TaskEditor({ moduleId, task }: { moduleId: string; task: TaskRow | null
           {pending ? "Menyimpan..." : task ? "Simpan tugas" : "Tambah tugas"}
         </button>
         {task && (
-          <button type="button" disabled={pending} onClick={() => act(() => deleteTaskAction(task.id))} className={danger}>
+          <button type="button" disabled={pending} onClick={() => act(() => deleteTaskAction(task.id), undefined, "Dihapus")} className={danger}>
             Hapus tugas
           </button>
         )}
@@ -421,7 +427,7 @@ export function ModuleEditor({ module, draft, isFirst, isLast, assessment }: { m
                 <button type="button" disabled={pending || isLast} onClick={() => act(() => moveModuleAction(module.id, 1))} className={ghost}>
                   ↓ Turunkan
                 </button>
-                <button type="button" disabled={pending} onClick={() => act(() => deleteModuleAction(module.id))} className={danger}>
+                <button type="button" disabled={pending} onClick={() => act(() => deleteModuleAction(module.id), undefined, "Dihapus")} className={danger}>
                   Hapus sesi
                 </button>
               </>

@@ -83,3 +83,42 @@ export const SEED_SETTINGS: Record<string, unknown> = {
       "12 program bahasa Inggris untuk speaking, academic goals, kids, scholarship, dan career. Semua dibangun dengan kelas kecil, rubrik, dan bukti progres nyata.",
   },
 };
+
+// Terjemahan bawaan untuk website English. Dipakai selama teks Indonesia program/FAQ masih sama dengan isi awal
+// dan kolom English di CMS masih kosong.
+export const SEED_PROGRAMS_EN: Record<string, { outcome: string; evidence: string }> = {
+  "english-zero": { outcome: "Introduce yourself and hold basic conversations with limited support.", evidence: "A 1–2 minute self-introduction recording and a short dialogue." },
+  speakup: { outcome: "Sustain a 5-minute conversation, ask follow-up questions, and ask for clarification.", evidence: "Recordings of the first and final conversations." },
+  "english-circle": { outcome: "Complete monthly practice targets and improve your focus skills.", evidence: "Monthly practice log, sample recordings, and tutor review." },
+  scoreready: { outcome: "Improve performance in each TOEFL/IELTS section based on an initial diagnostic.", evidence: "Initial diagnostic simulation compared with a final simulation in a comparable format." },
+  academicwrite: { outcome: "Write 500–700-word academic texts with valid citation, paraphrasing, and structure.", evidence: "First draft, revision notes, and the final essay." },
+  scholarspeak: { outcome: "Explain your motivation, study plan, and contribution in a mock scholarship interview.", evidence: "Mock interview recording and a structured answer outline." },
+  litlab: { outcome: "Understand literary texts and films, discuss themes, and write a 200–300-word review.", evidence: "Recorded discussion and a structured written review." },
+  littlelingo: { outcome: "Introduce themselves, recognize themed vocabulary, and follow the tutor's instructions.", evidence: "Activity portfolio and a video of the child speaking." },
+  teentalk: { outcome: "Give a 3-minute presentation and answer simple questions with confidence.", evidence: "Recording of an independent presentation and Q&A session." },
+  "english-for-career": { outcome: "Complete a 10–15-minute mock job interview for a target position.", evidence: "Professional mock interview recording and tutor evaluation." },
+  serviceenglish: { outcome: "Handle 4 customer service scenarios: hospitality, F&B, and complaint handling.", evidence: "Role-play recordings and a service standard checklist." },
+  speakstage: { outcome: "Deliver a 5-minute business presentation and answer 2 critical questions.", evidence: "Professional presentation video and Q&A recording." },
+};
+
+export const SEED_FAQS_EN: { question: string; answer: string }[] = [
+  {
+    question: "What makes Milestone English different from a regular English course?",
+    answer:
+      "Every program has a clear target outcome. Your starting ability is measured through a placement test and a baseline recording, and at the end of the program you receive a report that compares your first and final results using the same rubric.",
+  },
+  {
+    question: "Is there a placement test before joining a class?",
+    answer:
+      "Yes. The placement test is required for every new learner and you can try it for free from this page. It takes about 25–30 minutes and measures grammar, reading, listening, writing, and speaking. Writing and speaking are scored by a tutor within 24 hours.",
+  },
+  {
+    question: "How do I pay?",
+    answer:
+      "After you choose a class schedule, an invoice appears automatically in the portal. Make a bank transfer, upload the proof of payment, and the class becomes active once our admin team verifies it. You will be notified by email and WhatsApp.",
+  },
+  {
+    question: "How many learners are in one class?",
+    answer: "Each batch is limited to 4–6 learners, so everyone gets enough speaking time and feedback from the tutor.",
+  },
+];

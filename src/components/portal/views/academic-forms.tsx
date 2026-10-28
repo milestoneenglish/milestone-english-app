@@ -92,7 +92,7 @@ function IndicatorEditor({ indicator, draft }: { indicator: Indicator; draft: bo
             {pending ? "Menyimpan..." : "Simpan indikator"}
           </button>
           {draft && (
-            <button type="button" disabled={pending} onClick={() => act(() => deleteIndicatorAction(indicator.id))} className={danger}>
+            <button type="button" disabled={pending} onClick={() => act(() => deleteIndicatorAction(indicator.id), undefined, "Dihapus")} className={danger}>
               Hapus indikator
             </button>
           )}
@@ -341,10 +341,10 @@ export function ReviewForm({ reportId, skills, levels }: { reportId: string; ski
       </Field>
       <ErrorText error={error} />
       <div className="flex flex-wrap gap-2">
-        <button type="button" disabled={pending} onClick={() => act(() => reviewReportAction(reportId, true, comment, l))} className="btn-orange rounded-full px-5 py-2.5 text-sm">
+        <button type="button" disabled={pending} onClick={() => act(() => reviewReportAction(reportId, true, comment, l), undefined, "Laporan diterbitkan")} className="btn-orange rounded-full px-5 py-2.5 text-sm">
           {pending ? "Memproses..." : "Terbitkan laporan & PDF"}
         </button>
-        <button type="button" disabled={pending} onClick={() => act(() => reviewReportAction(reportId, false, comment, null))} className={danger}>
+        <button type="button" disabled={pending} onClick={() => act(() => reviewReportAction(reportId, false, comment, null), undefined, "Laporan dikembalikan ke tutor")} className={danger}>
           Kembalikan ke tutor
         </button>
       </div>

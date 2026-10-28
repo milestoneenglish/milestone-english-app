@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { toast } from "@/components/toast";
 import { useState, useTransition } from "react";
 import { assignAction, publishAction, retestAction, reviewAction, type StaffResult } from "@/app/portal/placement-actions";
 import { RUBRIC_SCALE, SPEAKING_CRITERIA, WRITING_CRITERIA } from "@/lib/placement/levels";
@@ -14,7 +15,8 @@ function useStaffAction() {
     setError("");
     start(async () => {
       const res = await fn();
-      if (!res.ok) return setError(res.error);
+      if (!res.ok) { toast.error(res.error); return setError(res.error); }
+      toast.success("Tersimpan");
       setDone(true);
       if (after) router.push(after);
       router.refresh();

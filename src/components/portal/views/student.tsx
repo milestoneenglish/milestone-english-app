@@ -1,10 +1,12 @@
 import { activePrograms, attemptHistory, ownStudent } from "@/lib/students";
 import type { Viewer } from "@/lib/session";
-import { formatDateTime, Notice, PageHeader, Panel, Badge, EmptyState } from "../ui";
+import { formatDateTime, Notice, greeting, PageHeader, Panel, Badge, EmptyState } from "../ui";
 import { journeyStage, JourneyStepper, NextStepCard, PlacementResult } from "../journey";
-import { goalLabel } from "@/lib/placement/levels";
+import { goalLabel, levelTitle } from "@/lib/placement/levels";
 import { studentEnrollments } from "@/lib/classes";
 import { ClassStep, currentEnrollment } from "./classes";
+import { PlacementPdfLink, placementPdfReady } from "./placement-pdf-link";
+import { SurveyPrompt } from "./quality";
 import { WeekPanel } from "./student-learning";
 
 const STATUS_LABEL: Record<string, { label: string; tone: "orange" | "green" | "amber" | "slate" }> = {
@@ -26,7 +28,7 @@ export async function StudentHome({ viewer, error }: { viewer: Viewer; error?: s
   if (!student) {
     return (
       <div className="space-y-6">
-        <PageHeader title={`Halo, ${firstName}!`} />
+        <PageHeader title={greeting(firstName)} />
         <EmptyState title="Profil siswa belum tersedia" text="Hubungi tim Milestone English agar profil siswamu dibuatkan." />
       </div>
     );
@@ -40,7 +42,7 @@ export async function StudentHome({ viewer, error }: { viewer: Viewer; error?: s
 
   return (
     <div className="fade-in mx-auto max-w-5xl space-y-6">
-      <PageHeader title={`Halo, ${firstName}!`} subtitle={`Tujuan belajar: ${goalLabel(student.learning_goal) || "-"}${interested ? ` · Minat: ${interested.name}` : ""}`} />
+      <PageHeader title={greeting(firstName)} subtitle={`Tujuan belajar: ${goalLabel(student.learning_goal) || "-"}${interested ? ` · Minat: ${interested.name}` : ""}`} />
       {error && <Notice tone="red">{error}</Notice>}
       <Panel>
         <JourneyStepper stage={stage} />
@@ -48,6 +50,7 @@ export async function StudentHome({ viewer, error }: { viewer: Viewer; error?: s
       <Panel>
         <NextStepCard attempt={attempt} studentId={student.id} returnTo="/portal/student" classStep={classStep} />
       </Panel>
+      <SurveyPrompt studentIds={[student.id]} />
       {current?.status === "active" && <WeekPanel studentId={student.id} role="student" />}
       {published && stage === 2 && (
         <Panel title="Hasil placement test">
@@ -61,7 +64,7 @@ export async function StudentHome({ viewer, error }: { viewer: Viewer; error?: s
 export async function StudentPlacement({ viewer, error }: { viewer: Viewer; error?: string }) {
   const [{ student, attempt }, programs] = await Promise.all([ownStudent(viewer.id), activePrograms()]);
   if (!student) return <EmptyState title="Profil siswa belum tersedia" />;
-  const history = await attemptHistory(student.id);
+  const [history, enrollments] = await Promise.all([attemptHistory(student.id), studentEnrollments([student.id])]);
   const lastPublished = history.find((a) => a.status === "published");
 
   return (
@@ -73,6 +76,13 @@ export async function StudentPlacement({ viewer, error }: { viewer: Viewer; erro
       </Panel>
       {lastPublished && (
         <Panel title="Hasil terbit terakhir">
+          {placementPdfReady(lastPublished, enrollments) ? (
+            <div className="mb-4 flex justify-end">
+              <PlacementPdfLink attemptId={lastPublished.id} />
+            </div>
+          ) : (
+            <p className="mb-4 text-xs text-amber-200/70">PDF hasil placement bisa diunduh setelah kelas pertamamu aktif.</p>
+          )}
           <PlacementResult attempt={lastPublished} programs={programs} />
         </Panel>
       )}
@@ -85,7 +95,7 @@ export async function StudentPlacement({ viewer, error }: { viewer: Viewer; erro
                   {a.retest_of ? "Tes ulang" : "Tes awal"} · dikirim {formatDateTime(a.submitted_at)}
                 </span>
                 <span className="flex items-center gap-3">
-                  {a.status === "published" && <span className="font-black text-orange">{a.levels.overall}</span>}
+                  {a.status === "published" && <span className="font-black text-orange" title={levelTitle(a.levels.overall)}>{a.levels.overall}</span>}
                   <PlacementStatusBadge status={a.status} />
                 </span>
               </li>

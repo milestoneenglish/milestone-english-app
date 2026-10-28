@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { Badge, EmptyState, formatDateTime, PageHeader, Panel, Tabs } from "../ui";
 import { DecideButtons } from "./decide-buttons";
 import { PlacementStatusBadge } from "./student";
+import { ResetPasswordButton } from "./whatsapp-forms";
 
 type Registrant = {
   id: string;
@@ -13,7 +14,7 @@ type Registrant = {
   user_id: string | null;
   account: { email: string; phone: string | null } | null;
   program: { name: string } | null;
-  guardian: { name: string; email: string; phone: string | null; status: string } | null;
+  guardian: { id: string; name: string; email: string; phone: string | null; status: string } | null;
   placement: string | null;
   level: string | null;
 };
@@ -26,7 +27,7 @@ async function registrants(): Promise<Registrant[]> {
       .select("id, full_name, birth_year, learning_goal, created_at, user_id, account:profiles!students_user_id_fkey(email, phone), program:programs(name)")
       .order("created_at", { ascending: false })
       .limit(500),
-    admin.from("guardian_links").select("student_id, status, guardian:profiles!guardian_links_guardian_id_fkey(full_name, email, phone)"),
+    admin.from("guardian_links").select("student_id, guardian_id, status, guardian:profiles!guardian_links_guardian_id_fkey(full_name, email, phone)"),
     admin.from("placement_attempts").select("student_id, status, levels, created_at").not("student_id", "is", null).order("created_at", { ascending: false }),
   ]);
   return (students ?? []).map((s) => {
@@ -35,7 +36,7 @@ async function registrants(): Promise<Registrant[]> {
     const attempt = attempts?.find((a) => a.student_id === s.id);
     return {
       ...(s as unknown as Omit<Registrant, "guardian" | "placement" | "level">),
-      guardian: link && g ? { name: g.full_name, email: g.email, phone: g.phone, status: link.status } : null,
+      guardian: link && g ? { id: link.guardian_id, name: g.full_name, email: g.email, phone: g.phone, status: link.status } : null,
       placement: attempt?.status ?? null,
       level: (attempt?.levels as { overall?: string } | undefined)?.overall ?? null,
     };
@@ -55,7 +56,7 @@ export async function AdminRegistrations({ params }: { params: Record<string, st
 
   return (
     <div className="fade-in space-y-6">
-      <PageHeader title="Pendaftaran" subtitle="Semua calon siswa dan posisinya di perjalanan pendaftaran." />
+      <PageHeader title="Pendaftaran" subtitle="Semua calon siswa dan posisinya di perjalanan pendaftaran. Siswa/wali yang lupa password dibuatkan password sementara dari kolom Akun." />
       <Tabs
         active={tab}
         tabs={[
@@ -70,14 +71,15 @@ export async function AdminRegistrations({ params }: { params: Record<string, st
           <EmptyState icon="users" title="Belum ada pendaftar di bagian ini" />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[760px] text-sm">
+            <table className="w-full min-w-[880px] text-sm">
               <thead>
                 <tr className="border-b border-orange/30 text-left text-xs text-amber-200/80">
                   <th className="py-2 pr-3 font-black">Siswa</th>
                   <th className="py-2 pr-3 font-black">Kontak</th>
                   <th className="py-2 pr-3 font-black">Minat & tujuan</th>
                   <th className="py-2 pr-3 font-black">Placement</th>
-                  <th className="py-2 font-black">Daftar</th>
+                  <th className="py-2 pr-3 font-black">Daftar</th>
+                  <th className="py-2 font-black">Akun</th>
                 </tr>
               </thead>
               <tbody>
@@ -105,7 +107,14 @@ export async function AdminRegistrations({ params }: { params: Record<string, st
                         {r.placement ? <PlacementStatusBadge status={r.placement} /> : <Badge>Belum mulai</Badge>}
                         {r.level && <span className="ml-2 font-black text-orange">{r.level}</span>}
                       </td>
-                      <td className="py-3 text-xs text-amber-100">{formatDateTime(r.created_at)}</td>
+                      <td className="py-3 pr-3 text-xs text-amber-100">{formatDateTime(r.created_at)}</td>
+                      <td className="py-3">
+                        {r.user_id ? (
+                          <ResetPasswordButton userId={r.user_id} label="Reset password" />
+                        ) : r.guardian ? (
+                          <ResetPasswordButton userId={r.guardian.id} label="Reset password wali" />
+                        ) : null}
+                      </td>
                     </tr>
                   );
                 })}

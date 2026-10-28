@@ -8,12 +8,14 @@ import {
   SCORE_LABEL,
   SKILL_LABEL,
   SKILLS,
+  skillAverages,
   type AssessmentKind,
   type ReportStatus,
   type ReportSummary,
   type SkillLevels,
 } from "@/lib/academic";
 import type { Evidence } from "@/lib/assessment";
+import { levelTitle } from "@/lib/placement/levels";
 import { Badge, formatDateTime } from "../ui";
 import { FileButton } from "./curriculum-forms";
 
@@ -139,6 +141,41 @@ export function ScoreBars({ summary }: { summary: ReportSummary }) {
   );
 }
 
+export function SkillChart({ summary }: { summary: ReportSummary }) {
+  const { kinds, rows } = skillAverages(summary);
+  if (!kinds.length) return null;
+  return (
+    <div className="space-y-3">
+      {rows.map((r) => (
+        <div key={r.skill} className="grid gap-2 sm:grid-cols-[110px_1fr] sm:items-center">
+          <p className="text-xs font-black text-amber-100">{SKILL_LABEL[r.skill]}</p>
+          <div className="space-y-1">
+            {kinds.map((k) => {
+              const v = r.values[k] ?? null;
+              return (
+                <div key={k} className="flex items-center gap-2" aria-label={`${SKILL_LABEL[r.skill]} assessment ${ASSESSMENT_SHORT[k].toLowerCase()}: ${v === null ? "belum dinilai" : fmt(v)}`}>
+                  <div className="h-2.5 flex-1 rounded-full bg-navy-dark">
+                    <div className={`h-2.5 rounded-full ${KIND_BAR[k]}`} style={{ width: `${((v ?? 0) / 4) * 100}%` }} />
+                  </div>
+                  <span className="w-8 text-right text-[11px] font-bold text-amber-100">{fmt(v)}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+      <div className="flex flex-wrap gap-4 pt-1 text-[11px] text-amber-200/80">
+        {kinds.map((k) => (
+          <span key={k} className="inline-flex items-center gap-1.5">
+            <span className={`h-2.5 w-2.5 rounded-sm ${KIND_BAR[k]}`} /> Assessment {ASSESSMENT_SHORT[k].toLowerCase()}
+          </span>
+        ))}
+        <span>Skala 1–4</span>
+      </div>
+    </div>
+  );
+}
+
 export function LevelChips({ levels }: { levels: SkillLevels }) {
   const skills = SKILLS.filter((k) => levels[k]);
   const overall = overallReportLevel(levels);
@@ -146,13 +183,13 @@ export function LevelChips({ levels }: { levels: SkillLevels }) {
   return (
     <div className="flex flex-wrap gap-2">
       {skills.map((k) => (
-        <div key={k} className="min-w-20 rounded-xl border border-orange/40 px-3 py-2 text-center">
+        <div key={k} className="min-w-20 rounded-xl border border-orange/40 px-3 py-2 text-center" title={levelTitle(levels[k])}>
           <p className="text-[11px] text-amber-200/80">{SKILL_LABEL[k]}</p>
           <p className="text-lg font-black text-white">{levels[k]}</p>
         </div>
       ))}
       {overall && (
-        <div className="min-w-20 rounded-xl bg-orange px-3 py-2 text-center text-navy">
+        <div className="min-w-20 rounded-xl bg-orange px-3 py-2 text-center text-navy" title={levelTitle(overall)}>
           <p className="text-[11px] font-bold">Keseluruhan</p>
           <p className="text-lg font-black">{overall}</p>
         </div>

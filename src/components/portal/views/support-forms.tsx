@@ -56,7 +56,7 @@ export function ReplyForm({ ticketId, staff, canClose }: { ticketId: string; sta
       className="space-y-3"
       onSubmit={(e) => {
         e.preventDefault();
-        act(() => replyTicketAction(ticketId, body), () => (setBody(""), router.refresh()));
+        act(() => replyTicketAction(ticketId, body), () => (setBody(""), router.refresh()), "Balasan terkirim");
       }}
     >
       <Field label={staff ? "Balasan untuk pengirim" : "Balas"}>
@@ -71,7 +71,7 @@ export function ReplyForm({ ticketId, staff, canClose }: { ticketId: string; sta
           (confirm ? (
             <>
               <span className="text-xs text-amber-100">Tutup tiket? Pengirim masih bisa membukanya lagi dalam 7 hari.</span>
-              <button type="button" disabled={pending} onClick={() => act(() => closeTicketAction(ticketId))} className={danger}>
+              <button type="button" disabled={pending} onClick={() => act(() => closeTicketAction(ticketId), undefined, "Tiket ditutup")} className={danger}>
                 Ya, tutup tiket
               </button>
               <button type="button" onClick={() => setConfirm(false)} className={ghost}>
@@ -96,7 +96,7 @@ export function ReopenForm({ ticketId }: { ticketId: string }) {
       className="space-y-3"
       onSubmit={(e) => {
         e.preventDefault();
-        act(() => reopenTicketAction(ticketId, body), () => (setBody(""), router.refresh()));
+        act(() => reopenTicketAction(ticketId, body), () => (setBody(""), router.refresh()), "Tiket dibuka kembali");
       }}
     >
       <Field label="Masih ada kendala? Buka lagi tiket ini">

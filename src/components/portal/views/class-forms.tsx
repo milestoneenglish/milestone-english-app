@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { toast } from "@/components/toast";
 import { useState, useTransition } from "react";
 import { enrollAction, onboardingDoneAction, prepareProofUpload, submitProofAction } from "@/app/portal/class-actions";
 import { Icon } from "@/components/icons";
@@ -43,7 +44,8 @@ export function BatchPicker({ studentId, batch, level, payHref }: { studentId: s
     start(async () => {
       setError("");
       const res = await enrollAction(studentId, batch.id);
-      if (!res.ok) return setError(res.error);
+      if (!res.ok) { toast.error(res.error); return setError(res.error); }
+      toast.success("Kursi dipegang. Selesaikan pembayaran dalam 2×24 jam.");
       router.push(`${payHref}${payHref.includes("?") ? "&" : "?"}invoice=${res.invoiceId}`);
     });
 
@@ -166,7 +168,8 @@ export function ProofForm({ invoiceId, amount }: { invoiceId: string; amount: nu
     setStep("save");
     const res = await submitProofAction(invoiceId, { path: target.path, bank, sender, transferDate: date, amount: amountValue });
     setStep("");
-    if (!res.ok) return setError(res.error);
+    if (!res.ok) { toast.error(res.error); return setError(res.error); }
+    toast.success("Bukti transfer terkirim. Admin akan memverifikasinya.");
     router.refresh();
   }
 
@@ -225,8 +228,8 @@ export function OnboardingButton({ enrollmentId }: { enrollmentId: string }) {
         onClick={() =>
           start(async () => {
             const res = await onboardingDoneAction(enrollmentId);
-            if (!res.ok) setError(res.error);
-            else router.refresh();
+            if (!res.ok) { toast.error(res.error); setError(res.error); }
+            else { toast.success("Selamat bergabung! Kelasmu siap."); router.refresh(); }
           })
         }
         className="btn-orange flex items-center gap-2 rounded-full px-6 py-3 text-sm"

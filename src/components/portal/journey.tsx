@@ -2,7 +2,8 @@ import Link from "next/link";
 import { startStudentTest } from "@/app/placement/actions";
 import { Icon } from "@/components/icons";
 import { formatRupiah } from "@/lib/content";
-import { LEVELS, SECTION_LABEL, SECTIONS, SPEAKING_CRITERIA, WRITING_CRITERIA, type Level } from "@/lib/placement/levels";
+import { LevelGuide } from "@/components/level-guide";
+import { levelTitle, LEVELS, SECTION_LABEL, SECTIONS, SPEAKING_CRITERIA, WRITING_CRITERIA, type Level } from "@/lib/placement/levels";
 import type { AttemptRow } from "@/lib/placement/server";
 import { formatDateTime } from "./ui";
 
@@ -48,7 +49,7 @@ export function PlacementResult({ attempt, programs }: { attempt: AttemptRow; pr
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center gap-4">
-        <div className="rounded-2xl bg-orange px-5 py-3 text-navy">
+        <div className="rounded-2xl bg-orange px-5 py-3 text-navy" title={levelTitle(attempt.levels.overall)}>
           <p className="text-[11px] font-black uppercase tracking-[0.18em]">Level keseluruhan</p>
           <p className="text-3xl font-black">{attempt.levels.overall ?? "-"}</p>
         </div>
@@ -56,7 +57,7 @@ export function PlacementResult({ attempt, programs }: { attempt: AttemptRow; pr
       </div>
       <ul className="grid grid-cols-2 gap-2 sm:grid-cols-5">
         {SECTIONS.map((s) => (
-          <li key={s} className="lp-card-soft px-3 py-3 text-center">
+          <li key={s} className="lp-card-soft px-3 py-3 text-center" title={levelTitle(attempt.levels[s])}>
             <p className="text-[11px] font-bold text-amber-200/80">{SECTION_LABEL[s]}</p>
             <p className={`mt-1 text-lg font-black ${levelTone(attempt.levels[s])}`}>{attempt.levels[s] ?? "—"}</p>
             {attempt.auto_scores[s] && (
@@ -67,6 +68,7 @@ export function PlacementResult({ attempt, programs }: { attempt: AttemptRow; pr
           </li>
         ))}
       </ul>
+      <LevelGuide current={attempt.levels.overall} />
       {(attempt.review_comment || attempt.lead_note) && (
         <div className="space-y-2 text-sm">
           {attempt.review_comment && (

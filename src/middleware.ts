@@ -25,7 +25,8 @@ export async function middleware(request: NextRequest) {
 
   if (!user && request.nextUrl.pathname.startsWith("/portal")) {
     const url = request.nextUrl.clone();
-    url.pathname = "/masuk";
+    // Portal tim kembali ke pintu masuk tim; selain itu ke pintu masuk siswa dan wali.
+    url.pathname = /^\/portal\/(owner|admin|lead|tutor)(\/|$)/.test(request.nextUrl.pathname) ? "/tim" : "/masuk";
     url.search = "";
     return NextResponse.redirect(url);
   }

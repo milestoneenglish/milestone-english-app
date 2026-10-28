@@ -9,6 +9,7 @@ import { guardianChildren, ownStudent, type StudentRow } from "@/lib/students";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { Badge, EmptyState, formatDateTime, Notice, PageHeader, Panel, Tabs } from "../ui";
 import { BatchPicker, CopyButton, OnboardingButton, ProofForm, type PickableBatch } from "./class-forms";
+import { PaymentDetailButton, type PaymentDetail } from "./payment-detail";
 
 export type Learner = { student: StudentRow; attempt: AttemptRow | null; linkStatus?: string };
 
@@ -236,7 +237,12 @@ function childQuery(role: "student" | "guardian", studentId: string) {
 
 export function ChildTabs({ learners, active, base, section }: { learners: Learner[]; active: string; base: string; section: string }) {
   if (learners.length < 2) return null;
-  return <Tabs active={active} tabs={learners.map((l) => ({ key: l.student.id, label: l.student.full_name, href: `${base}/${section}?anak=${l.student.id}` }))} />;
+  return (
+    <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-orange/20 bg-navy-dark/40 px-4 py-3">
+      <span className="text-[11px] font-black uppercase tracking-[0.18em] text-amber-200/80">Pilih anak</span>
+      <Tabs active={active} tabs={learners.map((l) => ({ key: l.student.id, label: l.student.full_name, href: `${base}/${section}?anak=${l.student.id}` }))} />
+    </div>
+  );
 }
 
 // Halaman Pilih Program / Program Saya (siswa) dan Program Anak (wali).
@@ -340,12 +346,46 @@ export async function PaymentPage({ viewer, role, params }: { viewer: Viewer; ro
   const invoices = enrollments.filter((e) => e.invoice).map((e) => ({ ...e.invoice!, enrollment: e, learner: learners.find((l) => l.student.id === e.student_id)! }));
   const ids = invoices.map((i) => i.id);
   const { data: proofs } = ids.length
-    ? await createAdminClient().from("payment_proofs").select("invoice_id, sender_bank, sender_name, amount_idr, transfer_date, status, created_at").in("invoice_id", ids).order("created_at", { ascending: false })
+    ? await createAdminClient().from("payment_proofs").select("invoice_id, sender_bank, sender_name, amount_idr, transfer_date, status, reject_reason, created_at").in("invoice_id", ids).order("created_at", { ascending: false })
     : { data: [] };
   const unpaid = invoices.filter((i) => i.status === "unpaid");
   const waiting = invoices.filter((i) => i.status === "awaiting_verification");
   const history = invoices.filter((i) => i.status !== "unpaid" && i.status !== "awaiting_verification");
   const bank = bankLine(settings);
+  const detail = (inv: (typeof invoices)[number]): PaymentDetail => {
+    const own = (proofs ?? []).filter((p) => p.invoice_id === inv.id);
+    const { batch } = inv.enrollment;
+    const timeline = [
+      { label: "Tagihan terbit", at: formatDateTime(inv.created_at) },
+      ...[...own].reverse().map((p) => ({ label: `Bukti dikirim (${p.sender_bank})`, at: formatDateTime(p.created_at) })),
+      inv.status === "paid" ? { label: "Lunas, kelas aktif", at: formatDateTime(inv.paid_at) } : null,
+      inv.status === "expired" ? { label: "Kedaluwarsa, kursi dilepas", at: formatDateTime(inv.due_at) } : null,
+      inv.status === "unpaid" ? { label: "Batas bayar", at: formatDateTime(inv.due_at) } : null,
+      inv.status === "cancelled" ? { label: "Dibatalkan", at: "-" } : null,
+    ].filter(Boolean) as PaymentDetail["timeline"];
+    return {
+      number: inv.number,
+      description: inv.description,
+      student: inv.learner.student.full_name,
+      program: batch.program.name,
+      batch: batch.code,
+      schedule: `${batch.schedule_label} · mulai ${longDate(batch.start_date)}`,
+      amount: formatRupiah(inv.amount_idr),
+      status: INVOICE_BADGE[inv.status]?.label ?? inv.status,
+      timeline,
+      rejectReason: inv.status === "unpaid" ? inv.reject_reason : null,
+      proofs: own.map((p) => ({
+        sent: formatDateTime(p.created_at),
+        bank: p.sender_bank,
+        sender: p.sender_name,
+        amount: formatRupiah(p.amount_idr),
+        transferDate: longDate(p.transfer_date),
+        status: p.status,
+        reason: p.reject_reason,
+      })),
+      receiptHref: inv.status === "paid" ? `/kuitansi/${inv.id}` : null,
+    };
+  };
 
   return (
     <div className="fade-in mx-auto max-w-5xl space-y-6">
@@ -358,7 +398,10 @@ export async function PaymentPage({ viewer, role, params }: { viewer: Viewer; ro
               <p className="text-xs font-bold text-amber-200/80">{inv.number}</p>
               <p className="text-lg font-black text-white">{inv.description}</p>
             </div>
-            <InvoiceBadge status={inv.status} />
+            <div className="flex items-center gap-2">
+              <InvoiceBadge status={inv.status} />
+              <PaymentDetailButton detail={detail(inv)} />
+            </div>
           </div>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <div className="rounded-2xl bg-orange px-5 py-4 text-navy">
@@ -404,7 +447,10 @@ export async function PaymentPage({ viewer, role, params }: { viewer: Viewer; ro
                       {p ? ` · dikirim ${formatDateTime(p.created_at)} dari ${p.sender_bank} a.n. ${p.sender_name}` : ""}
                     </p>
                   </div>
-                  <InvoiceBadge status={inv.status} />
+                  <div className="flex items-center gap-2">
+                    <InvoiceBadge status={inv.status} />
+                    <PaymentDetailButton detail={detail(inv)} />
+                  </div>
                 </li>
               );
             })}
@@ -425,8 +471,9 @@ export async function PaymentPage({ viewer, role, params }: { viewer: Viewer; ro
                     {inv.paid_at ? ` · lunas ${formatDateTime(inv.paid_at)}` : ""}
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <InvoiceBadge status={inv.status} />
+                  <PaymentDetailButton detail={detail(inv)} />
                   {inv.status === "paid" && (
                     <Link href={`/kuitansi/${inv.id}`} target="_blank" className="rounded-full border border-orange/40 px-4 py-2 text-xs font-black text-orange hover:bg-orange/10">
                       Kuitansi

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { SECTION_LABEL, SECTIONS } from "@/lib/placement/levels";
 import { createClient } from "@/lib/supabase/server";
-import { Badge, EmptyState, PageHeader, Panel } from "../ui";
+import { Badge, EmptyState, PageHeader, Panel, Tabs } from "../ui";
 import { QuestionForm } from "./question-form";
 
 type Row = {
@@ -33,7 +33,7 @@ export async function QuestionBank({ params }: { params: Record<string, string |
           title={row ? "Ubah soal" : "Soal baru"}
           subtitle={SECTION_LABEL[section]}
           action={
-            <Link href="/portal/lead/bank-soal" className="text-sm font-black text-orange">
+            <Link href={`/portal/lead/bank-soal?bagian=${section}`} className="text-sm font-black text-orange">
               ← Kembali ke bank soal
             </Link>
           }
@@ -59,10 +59,15 @@ export async function QuestionBank({ params }: { params: Record<string, string |
     );
   }
 
+  const current = SECTIONS.includes(params.bagian as Row["section"]) ? (params.bagian as Row["section"]) : SECTIONS[0];
   return (
     <div className="fade-in space-y-6">
       <PageHeader title="Bank soal placement" subtitle="Draf awal disusun sistem; tinjau, ubah, atau nonaktifkan soal sesuai standar akademik Milestone." />
-      {SECTIONS.map((section) => {
+      <Tabs
+        active={current}
+        tabs={SECTIONS.map((sec) => ({ key: sec, label: SECTION_LABEL[sec], count: rows.filter((r) => r.section === sec && r.active).length, href: `/portal/lead/bank-soal?bagian=${sec}` }))}
+      />
+      {[current].map((section) => {
         const list = rows.filter((r) => r.section === section);
         const active = list.filter((r) => r.active).length;
         return (

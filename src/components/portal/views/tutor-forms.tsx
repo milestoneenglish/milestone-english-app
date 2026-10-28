@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { toast } from "@/components/toast";
 import { useState, useTransition } from "react";
 import { publishAssignmentAction, recordAttendanceAction, saveFeedbackAction } from "@/app/portal/learning-actions";
 import type { SubmissionType } from "@/lib/curriculum";
@@ -65,7 +66,8 @@ export function AttendanceForm({
         rows.map((r) => ({ studentId: r.studentId, status: r.status, note: r.note })),
         sessionNote,
       );
-      if (!res.ok) return setError(res.error);
+      if (!res.ok) { toast.error(res.error); return setError(res.error); }
+      toast.success("Absensi tersimpan");
       setSaved(true);
       router.refresh();
     });
@@ -137,7 +139,8 @@ export function PublishTaskForm({
     start(async () => {
       setError("");
       const res = await publishAssignmentAction({ sessionId, taskId: task?.id ?? null, title: f.title, instructions: f.instructions, type: f.type, dueAt: fromWib(f.due) });
-      if (!res.ok) return setError(res.error);
+      if (!res.ok) { toast.error(res.error); return setError(res.error); }
+      toast.success("Tugas diterbitkan");
       setOpen(false);
       router.refresh();
     });
@@ -200,7 +203,8 @@ export function FeedbackForm({ submissionId, draft, canRevise }: { submissionId:
       setError("");
       setSaved(false);
       const res = await saveFeedbackAction(submissionId, body, decision, publish);
-      if (!res.ok) return setError(res.error);
+      if (!res.ok) { toast.error(res.error); return setError(res.error); }
+      toast.success(publish ? "Feedback diterbitkan" : "Draf feedback tersimpan");
       if (!publish) setSaved(true);
       router.refresh();
     });

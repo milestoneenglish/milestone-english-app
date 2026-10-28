@@ -1,9 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import type { LandingCopy } from "@/data/landing";
+import type { LandingCopy, SectionToggles } from "@/data/landing";
 import { ClassError } from "@/lib/classes";
-import type { Contact, Hero } from "@/lib/content";
+import type { Contact, Hero, SiteItemKind } from "@/lib/content";
+import type { Lang } from "@/lib/i18n";
 import type { EditableTemplate, TemplateKey } from "@/lib/notify";
 import {
   createStaff,
@@ -23,7 +24,24 @@ import {
 import { saveObservation, submitSurvey } from "@/lib/quality";
 import { requireRole } from "@/lib/session";
 import type { ImageSlot } from "@/lib/ops";
-import { deleteRow, imageUploadTarget, saveContact, saveFaq, saveHero, saveLanding, saveTemplate, saveTestimonial, setImage } from "@/lib/site";
+import {
+  deleteRow,
+  imageUploadTarget,
+  photoUploadTarget,
+  saveContact,
+  saveFaq,
+  saveHero,
+  saveLanding,
+  saveSections,
+  saveSiteItem,
+  saveTemplate,
+  saveTestimonial,
+  setImage,
+  setPublished,
+  uploadedPhotoUrl,
+  type PhotoKind,
+  type SiteItemInput,
+} from "@/lib/site";
 import { closeTicket, createTicket, reopenTicket, replyTicket } from "@/lib/support";
 
 // Aksi Fase 5: staf, program, keuangan, CMS website, bantuan, kualitas tutor.
@@ -42,6 +60,9 @@ async function run<T extends object>(fn: () => Promise<T>, paths: string[] = [])
     return { ok: false, error: "Terjadi kesalahan. Coba lagi." };
   }
 }
+
+// Halaman publik yang memakai konten CMS, dalam dua bahasa.
+const PUBLIC = ["/", "/en", "/daftar", "/en/daftar"];
 
 const done = async (p: Promise<unknown>) => {
   await p;
@@ -77,9 +98,9 @@ export async function saveProgramAction(id: string | null, input: ProgramInput) 
   return run(async () => ({ id: await saveProgram(id, input) }), ["/"]);
 }
 
-export async function updateProgramDescriptionAction(id: string, outcome: string, evidence: string) {
-  await requireRole("owner", "admin");
-  return run(() => done(updateProgramDescription(id, outcome, evidence)), ["/"]);
+export async function updateProgramDescriptionAction(id: string, outcome: string, evidence: string, outcomeEn = "", evidenceEn = "") {
+  await requireRole("owner");
+  return run(() => done(updateProgramDescription(id, outcome, evidence, outcomeEn, evidenceEn)), PUBLIC);
 }
 
 // ---------------------------------------------------------------- Keuangan (Owner)
@@ -104,50 +125,75 @@ export async function receiptUrlAction(id: string) {
   return run(async () => ({ url: await receiptUrl(id) }));
 }
 
-// ---------------------------------------------------------------- CMS website (Owner dan Admin)
+// ---------------------------------------------------------------- CMS website (khusus Owner)
 
-export async function saveHeroAction(hero: Hero) {
-  const viewer = await requireRole("owner", "admin");
-  return run(() => done(saveHero(viewer.id, hero)), ["/"]);
+export async function saveHeroAction(hero: Hero, lang: Lang = "id") {
+  const viewer = await requireRole("owner");
+  return run(() => done(saveHero(viewer.id, hero, lang)), PUBLIC);
 }
 
 export async function saveContactAction(contact: Contact) {
-  const viewer = await requireRole("owner", "admin");
-  return run(() => done(saveContact(viewer.id, contact)), ["/"]);
+  const viewer = await requireRole("owner");
+  return run(() => done(saveContact(viewer.id, contact)), PUBLIC);
 }
 
-export async function saveLandingAction(copy: LandingCopy) {
-  const viewer = await requireRole("owner", "admin");
-  return run(() => done(saveLanding(viewer.id, copy)), ["/"]);
+export async function saveLandingAction(copy: LandingCopy, lang: Lang = "id") {
+  const viewer = await requireRole("owner");
+  return run(() => done(saveLanding(viewer.id, copy, lang)), PUBLIC);
+}
+
+export async function saveSectionsAction(toggles: Partial<SectionToggles>) {
+  const viewer = await requireRole("owner");
+  return run(() => done(saveSections(viewer.id, toggles)), PUBLIC);
 }
 
 export async function prepareImageUpload(slot: ImageSlot, mime: string, size: number) {
-  await requireRole("owner", "admin");
+  await requireRole("owner");
   return run(() => imageUploadTarget(slot, mime, size));
 }
 
 export async function setImageAction(slot: ImageSlot, path: string) {
-  const viewer = await requireRole("owner", "admin");
-  return run(() => done(setImage(viewer.id, slot, path)), ["/"]);
+  const viewer = await requireRole("owner");
+  return run(() => done(setImage(viewer.id, slot, path)), PUBLIC);
+}
+
+export async function preparePhotoUpload(kind: PhotoKind, mime: string, size: number) {
+  await requireRole("owner");
+  return run(() => photoUploadTarget(kind, mime, size));
+}
+
+export async function photoUrlAction(kind: PhotoKind, path: string) {
+  await requireRole("owner");
+  return run(async () => ({ url: await uploadedPhotoUrl(kind, path) }));
 }
 
 export async function saveFaqAction(id: string | null, input: Parameters<typeof saveFaq>[1]) {
-  await requireRole("owner", "admin");
-  return run(() => done(saveFaq(id, input)), ["/"]);
+  await requireRole("owner");
+  return run(() => done(saveFaq(id, input)), PUBLIC);
 }
 
 export async function saveTestimonialAction(id: string | null, input: Parameters<typeof saveTestimonial>[1]) {
-  await requireRole("owner", "admin");
-  return run(() => done(saveTestimonial(id, input)), ["/"]);
+  await requireRole("owner");
+  return run(() => done(saveTestimonial(id, input)), PUBLIC);
 }
 
-export async function deleteContentAction(table: "faqs" | "testimonials", id: string) {
-  await requireRole("owner", "admin");
-  return run(() => done(deleteRow(table, id)), ["/"]);
+export async function saveSiteItemAction(id: string | null, kind: SiteItemKind, input: SiteItemInput) {
+  await requireRole("owner");
+  return run(() => done(saveSiteItem(id, kind, input)), PUBLIC);
+}
+
+export async function deleteContentAction(table: "faqs" | "testimonials" | "site_items", id: string) {
+  await requireRole("owner");
+  return run(() => done(deleteRow(table, id)), PUBLIC);
+}
+
+export async function setPublishedAction(table: "faqs" | "testimonials" | "site_items", id: string, published: boolean) {
+  await requireRole("owner");
+  return run(() => done(setPublished(table, id, published)), PUBLIC);
 }
 
 export async function saveTemplateAction(key: TemplateKey, value: EditableTemplate | null) {
-  const viewer = await requireRole("owner", "admin");
+  const viewer = await requireRole("owner");
   return run(() => done(saveTemplate(viewer.id, key, value)));
 }
 

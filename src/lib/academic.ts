@@ -74,3 +74,13 @@ export function averageScore(indicators: ReportSummary["indicators"], kind: Asse
 export function attendanceRate(a: ReportSummary["attendance"]) {
   return a.sessions ? Math.round(((a.present + a.late) / a.sessions) * 100) : null;
 }
+
+// Rata-rata skor per keterampilan di setiap titik assessment (grafik ringkas Beranda wali).
+export function skillAverages(summary: ReportSummary) {
+  const kinds = summary.kinds.filter((k) => summary.indicators.some((i) => typeof i.scores[k] === "number"));
+  const rows = SKILLS.map((skill) => {
+    const list = summary.indicators.filter((i) => i.skill === skill);
+    return { skill, values: Object.fromEntries(kinds.map((k) => [k, averageScore(list, k)])) as Partial<Record<AssessmentKind, number | null>> };
+  }).filter((r) => summary.indicators.some((i) => i.skill === r.skill));
+  return { kinds, rows };
+}

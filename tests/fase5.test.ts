@@ -89,7 +89,7 @@ describe("staf dan role", () => {
 });
 
 describe("program, harga, dan konten website", () => {
-  it("Owner mengubah harga (tercatat di audit); Admin hanya deskripsi; tutor tidak bisa", async () => {
+  it("Owner mengubah harga dan deskripsi (tercatat di audit); Admin dan tutor tidak bisa", async () => {
     const p = await one<{ id: string; price_idr: number }>("select id, price_idr from public.programs where code = 'EZ'");
     await t.as(admin, "update public.programs set price_idr = 1 where id = $1", [p.id]);
     expect((await one<{ price_idr: number }>("select price_idr from public.programs where id = $1", [p.id])).price_idr).toBe(p.price_idr);
@@ -98,15 +98,20 @@ describe("program, harga, dan konten website", () => {
     const log = await one<{ detail: { price: number; price_from: number } }>("select detail from public.audit_log where entity_id = $1 and action = 'program_updated' order by id desc limit 1", [p.id]);
     expect(log.detail.price - log.detail.price_from).toBe(50000);
 
-    await t.as(admin, "select public.update_program_description($1, $2, $3)", [p.id, "Target baru yang lebih jelas untuk pemula.", "Rekaman perkenalan."]);
-    expect((await one<{ outcome: string }>("select outcome from public.programs where id = $1", [p.id])).outcome).toBe("Target baru yang lebih jelas untuk pemula.");
-    await expect(t.as(tutor, "select public.update_program_description($1, $2, $3)", [p.id, "Target baru yang lebih jelas.", "Bukti."])).rejects.toThrow(/Owner atau Admin/);
-    await expect(t.as(admin, "select public.update_program_description($1, $2, $3)", [p.id, "pendek", "x"])).rejects.toThrow(/10–400/);
+    await t.as(owner, "select public.update_program_description($1, $2, $3, $4, $5)", [p.id, "Target baru yang lebih jelas untuk pemula.", "Rekaman perkenalan.", "A clearer target for beginners.", ""]);
+    const row = await one<{ outcome: string; outcome_en: string; evidence_en: string }>("select outcome, outcome_en, evidence_en from public.programs where id = $1", [p.id]);
+    expect(row).toEqual({ outcome: "Target baru yang lebih jelas untuk pemula.", outcome_en: "A clearer target for beginners.", evidence_en: "" });
+    // CMS website kini khusus Owner.
+    await expect(t.as(admin, "select public.update_program_description($1, $2, $3)", [p.id, "Target baru yang lebih jelas.", "Bukti."])).rejects.toThrow(/Hanya Owner/);
+    await expect(t.as(tutor, "select public.update_program_description($1, $2, $3)", [p.id, "Target baru yang lebih jelas.", "Bukti."])).rejects.toThrow(/Hanya Owner/);
+    await expect(t.as(owner, "select public.update_program_description($1, $2, $3)", [p.id, "pendek", "x"])).rejects.toThrow(/10–400/);
   });
 
-  it("Admin mengubah konten website, tetapi rekening tujuan dan catatan backup hanya Owner", async () => {
-    await t.as(admin, "insert into public.site_settings (key, value) values ('landing', '{}'::jsonb) on conflict (key) do update set value = excluded.value");
+  it("Konten website, rekening tujuan, dan catatan backup hanya diubah Owner", async () => {
+    await t.as(owner, "insert into public.site_settings (key, value) values ('landing', '{}'::jsonb) on conflict (key) do update set value = excluded.value");
     expect((await one<{ n: number }>("select count(*)::int as n from public.site_settings where key = 'landing'")).n).toBe(1);
+    await expect(t.as(admin, "insert into public.site_settings (key, value) values ('landing_en', '{}'::jsonb)")).rejects.toThrow(/row-level security/);
+    await expect(t.as(admin, "insert into public.faqs (question, answer) values ('Pertanyaan admin?', 'Jawaban admin.')")).rejects.toThrow(/row-level security/);
     await expect(t.as(admin, "insert into public.site_settings (key, value) values ('payment', '{}'::jsonb)")).rejects.toThrow(/row-level security/);
     await expect(t.as(admin, "insert into public.site_settings (key, value) values ('backup', '{}'::jsonb)")).rejects.toThrow(/row-level security/);
     await t.as(owner, "insert into public.site_settings (key, value) values ('payment', '{\"bank_name\":\"BCA\"}'::jsonb) on conflict (key) do update set value = excluded.value");

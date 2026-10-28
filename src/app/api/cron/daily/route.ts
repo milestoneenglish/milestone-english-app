@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { releaseExpired } from "@/lib/classes";
 import { sendDueReminders } from "@/lib/learning";
+import { pruneInbox } from "@/lib/inbox";
 import { notify, roleRecipients } from "@/lib/notify";
 import { backupDue, markBackupReminded } from "@/lib/owner";
 import { ensureReportPdfs, sendAcademicReminders } from "@/lib/reports";
@@ -8,7 +9,7 @@ import { ensureReportPdfs, sendAcademicReminders } from "@/lib/reports";
 // Dijalankan Vercel Cron sekali sehari (vercel.json): melepas invoice kedaluwarsa, memperbarui
 // status batch, mengirim pengingat tugas H-1, mengingatkan staf akademik atas assessment/laporan
 // yang lewat batas, membuat ulang PDF laporan yang sempat gagal, dan mengingatkan Owner bila
-// backup terakhir lebih dari 30 hari. Vercel menyertakan CRON_SECRET sebagai Bearer token.
+// backup terakhir lebih dari 30 hari, lalu membersihkan notifikasi portal yang lebih dari 90 hari. Vercel menyertakan CRON_SECRET sebagai Bearer token.
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
@@ -28,5 +29,6 @@ export async function GET(request: Request) {
     await notify("backup_reminder", await roleRecipients("owner"), { last: backup.value.last_at ? DATE_FMT.format(new Date(backup.value.last_at)) : "belum pernah" });
     await markBackupReminded(backup.value);
   }
+  await pruneInbox();
   return NextResponse.json({ ok: true, reminders, academic, pdfs, backupReminder: backup.due });
 }

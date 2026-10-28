@@ -18,7 +18,10 @@
     "setup:role": "node --env-file=.env.local scripts/setup-role.mjs",
     "report:sample": "esbuild scripts/sample-report.tsx --bundle --platform=node --format=esm --jsx=automatic --packages=external --log-level=warning --outfile=e2e-output/sample-report.mjs && node e2e-output/sample-report.mjs",
     "e2e:fase4": "node --env-file=.env.local tests/e2e/fase4.mjs",
-    "e2e:fase5": "node --env-file=.env.local tests/e2e/fase5.mjs"
+    "e2e:fase5": "node --env-file=.env.local tests/e2e/fase5.mjs",
+    "demo:isi": "node --env-file=.env.local scripts/demo-data.mjs isi",
+    "demo:hapus": "node --env-file=.env.local scripts/demo-data.mjs hapus",
+    "demo:password": "node --env-file=.env.local scripts/demo-data.mjs password"
   },
   "dependencies": {
     "@react-pdf/renderer": "^4.3.0",

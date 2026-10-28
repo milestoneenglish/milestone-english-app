@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { prepareSubmissionUpload, submitAssignmentAction } from "@/app/portal/learning-actions";
 import { Icon } from "@/components/icons";
+import { toast } from "@/components/toast";
 import type { SubmissionType } from "@/lib/curriculum";
 import { createClient } from "@/lib/supabase/client";
 
@@ -122,7 +123,8 @@ export function SubmissionForm({ assignmentId, studentId, type, revision }: { as
     setStep("Mengirim...");
     const res = await submitAssignmentAction(assignmentId, studentId, { text, path, mime });
     setStep("");
-    if (!res.ok) return setError(res.error);
+    if (!res.ok) { toast.error(res.error); return setError(res.error); }
+    toast.success("Tugas terkumpul. Tutor akan memberi feedback.");
     router.refresh();
   }
 

@@ -6,7 +6,8 @@ import { assignmentDetail, sessionDetail, sessionEnd, tutorAssignments, tutorQue
 import { placementQueue } from "@/lib/placement/staff";
 import { tutorAcademicQueue } from "@/lib/reports";
 import type { Viewer } from "@/lib/session";
-import { Badge, EmptyState, formatDateTime, Notice, PageHeader, Panel, Tabs } from "../ui";
+import { calendarMonth, MonthCalendar, type CalendarEvent } from "../calendar";
+import { Badge, EmptyState, formatDateTime, Notice, greeting, PageHeader, Panel, Tabs } from "../ui";
 import { QueueCard } from "./admin-classes";
 import { ModuleContent, SubmissionHistory, TaskStateBadge } from "./learning-ui";
 import { AttendanceForm, FeedbackForm, PublishTaskForm } from "./tutor-forms";
@@ -50,7 +51,7 @@ export async function TutorHome({ viewer }: { viewer: Viewer }) {
   const next = q.upcoming[0];
   return (
     <div className="fade-in space-y-6">
-      <PageHeader title={`Halo, ${firstName}!`} subtitle="Perlu tindakan hari ini." />
+      <PageHeader title={greeting(firstName)} subtitle="Perlu tindakan hari ini." />
       {q.attendanceOverdue > 0 && <Notice tone="red">{q.attendanceOverdue} sesi sudah lewat 24 jam tanpa absensi. Isi sekarang agar wali dan laporan tidak tertunda.</Notice>}
       {academic.assessmentCounts.overdue > 0 && <Notice tone="red">{academic.assessmentCounts.overdue} assessment siswa sudah lewat 48 jam setelah sesinya.</Notice>}
       {academic.reportsReturned > 0 && <Notice tone="red">{academic.reportsReturned} laporan dikembalikan Academic Lead untuk direvisi.</Notice>}
@@ -115,32 +116,49 @@ export async function TutorSessions({ viewer, params }: { viewer: Viewer; params
   if (params.id) return TutorSessionDetail({ viewer, id: params.id });
   const sessions = await tutorSessions(viewer.id);
   const now = Date.now();
-  const groups = {
-    perlu: sessions.filter((s) => Date.parse(s.starts_at) <= now && !s.attendance_done_at),
-    datang: sessions.filter((s) => Date.parse(s.starts_at) > now),
-    selesai: sessions.filter((s) => s.attendance_done_at).reverse(),
-  };
-  const tab = (params.tab as keyof typeof groups) in groups ? (params.tab as keyof typeof groups) : groups.perlu.length ? "perlu" : "datang";
+  const pending = sessions.filter((s) => Date.parse(s.starts_at) <= now && !s.attendance_done_at);
+  const events: CalendarEvent[] = sessions.map((s) => {
+    const started = Date.parse(s.starts_at) <= now;
+    const overdue = started && !s.attendance_done_at && sessionEnd(s) + 24 * 3600 * 1000 < now;
+    return {
+      id: s.id,
+      at: s.starts_at,
+      title: `${s.batch.code} · Sesi ${s.seq}`,
+      detail: s.module_title ?? s.batch.program.name,
+      tone: !started ? "orange" : s.attendance_done_at ? "green" : overdue ? "red" : "amber",
+      status: !started ? "Akan datang" : s.attendance_done_at ? "Absensi terisi" : overdue ? "Absensi terlambat diisi" : "Absensi belum diisi",
+      href: `/portal/tutor/sesi?id=${s.id}`,
+    };
+  });
+  const month = calendarMonth(params.bulan, events, now);
   return (
     <div className="fade-in space-y-6">
-      <PageHeader title="Sesi & absensi" subtitle="Materi tiap sesi, link kelas, absensi, dan tugas yang diterbitkan." />
-      <Tabs
-        active={tab}
-        tabs={[
-          { key: "perlu", label: "Perlu absensi", count: groups.perlu.length, href: "/portal/tutor/sesi?tab=perlu" },
-          { key: "datang", label: "Akan datang", count: groups.datang.length, href: "/portal/tutor/sesi?tab=datang" },
-          { key: "selesai", label: "Sudah diisi", count: groups.selesai.length, href: "/portal/tutor/sesi?tab=selesai" },
-        ]}
-      />
-      <Panel>
-        {groups[tab].length === 0 ? (
-          <EmptyState icon="calendar" title="Tidak ada sesi di bagian ini" text={sessions.length ? undefined : "Sesi muncul setelah admin menugaskanmu ke batch."} />
-        ) : (
+      <PageHeader title="Sesi & absensi" subtitle="Klik sesi di kalender untuk membuka materi, link kelas, absensi, dan tugasnya." />
+      {pending.length > 0 && (
+        <Panel title={`Perlu absensi (${pending.length})`}>
           <ul className="divide-y divide-orange/10">
-            {groups[tab].map((s) => (
+            {pending.map((s) => (
               <SessionRow key={s.id} s={s} />
             ))}
           </ul>
+        </Panel>
+      )}
+      <Panel>
+        {sessions.length === 0 ? (
+          <EmptyState icon="calendar" title="Belum ada sesi" text="Sesi muncul setelah admin menugaskanmu ke batch." />
+        ) : (
+          <MonthCalendar
+            events={events}
+            month={month}
+            hrefFor={(m) => `/portal/tutor/sesi?bulan=${m}`}
+            now={now}
+            legend={[
+              { tone: "orange", label: "Akan datang" },
+              { tone: "amber", label: "Absensi belum diisi" },
+              { tone: "red", label: "Terlambat diisi (>24 jam)" },
+              { tone: "green", label: "Absensi terisi" },
+            ]}
+          />
         )}
       </Panel>
     </div>
@@ -251,43 +269,24 @@ export async function TutorTasks({ viewer, params }: { viewer: Viewer; params: R
         {groups[tab].length === 0 ? (
           <EmptyState icon="task" title={tab === "nilai" ? "Semua pengumpulan sudah diberi feedback" : "Belum ada tugas"} text={tab === "semua" ? "Terbitkan tugas dari halaman Sesi & Absensi." : undefined} />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] text-sm">
-              <thead>
-                <tr className="border-b border-orange/30 text-left text-xs text-amber-200/80">
-                  <th className="py-2 pr-3 font-black">Tugas</th>
-                  <th className="py-2 pr-3 font-black">Tenggat</th>
-                  <th className="py-2 pr-3 font-black">Perlu feedback</th>
-                  <th className="py-2 pr-3 font-black">Selesai</th>
-                  <th className="py-2 pr-3 font-black">Belum kumpul</th>
-                  <th className="py-2 font-black" />
-                </tr>
-              </thead>
-              <tbody>
-                {groups[tab].map((a) => (
-                  <tr key={a.id} className="border-b border-orange/10 align-middle">
-                    <td className="py-3 pr-3">
-                      <p className="font-bold text-white">{a.title}</p>
-                      <p className="text-xs text-amber-200/70">
-                        {a.batch_code} · {a.program}
-                      </p>
-                    </td>
-                    <td className="py-3 pr-3 text-xs text-amber-100">{whenLabel(a.due_at)}</td>
-                    <td className="py-3 pr-3 font-black text-orange">{a.waiting}</td>
-                    <td className="py-3 pr-3 text-amber-100">
-                      {a.done}/{a.students}
-                    </td>
-                    <td className="py-3 pr-3 text-amber-100">{a.notSubmitted}</td>
-                    <td className="py-3 text-right">
-                      <Link href={`/portal/tutor/tugas?id=${a.id}`} className="font-black text-orange hover:text-orange-light">
-                        Buka →
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <ul className="space-y-2">
+            {groups[tab].map((a) => (
+              <li key={a.id}>
+                <Link href={`/portal/tutor/tugas?id=${a.id}`} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-orange/20 px-4 py-3 hover:border-orange/60">
+                  <span className="min-w-0">
+                    <span className="block font-bold text-white">{a.title}</span>
+                    <span className="block text-xs text-amber-200/70">
+                      {a.batch_code} · tenggat {whenLabel(a.due_at)} · {a.students - a.notSubmitted}/{a.students} dikumpulkan
+                    </span>
+                  </span>
+                  <span className="flex items-center gap-2">
+                    {a.waiting > 0 ? <Badge tone="orange">{a.waiting} perlu feedback</Badge> : a.done === a.students && a.students > 0 ? <Badge tone="green">Semua diterima</Badge> : <Badge>Tidak ada antrean</Badge>}
+                    <span className="text-xs font-black text-orange">Buka →</span>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
         )}
       </Panel>
     </div>
@@ -314,38 +313,55 @@ async function TutorTaskDetail({ viewer, id }: { viewer: Viewer; id: string }) {
         <p className="whitespace-pre-line text-sm text-amber-50">{a.instructions}</p>
         <p className="mt-2 text-xs text-amber-200/70">Diterbitkan {formatDateTime(a.created_at)} · batch mulai {longDate(batch.start_date)}</p>
       </Panel>
-      {[...students]
-        .sort((x, y) => order[x.state] - order[y.state])
-        .map((st) => {
-          const last = st.versions[st.versions.length - 1];
-          return (
-            <Panel key={st.student_id}>
-              <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-                <p className="text-lg font-black text-white">
-                  {st.full_name}
-                  {!st.has_account && <span className="ml-2 text-xs font-bold text-amber-200/70">dikumpulkan lewat akun wali</span>}
-                </p>
-                <TaskStateBadge state={st.state} />
-              </div>
-              {st.versions.length === 0 ? (
-                <p className="text-sm text-slate-400">Belum mengumpulkan.</p>
-              ) : (
-                <div className="space-y-4">
-                  {last.status === "submitted" && (
-                    <FeedbackForm
-                      key={last.id}
-                      submissionId={last.id}
-                      draft={last.feedback ? { body: last.feedback.body, decision: last.feedback.decision } : null}
-                      canRevise={last.version < 3}
-                    />
-                  )}
-                  <SubmissionHistory versions={st.versions} showDrafts />
-                </div>
-              )}
-            </Panel>
-          );
-        })}
-      {students.length === 0 && <EmptyState icon="users" title="Belum ada siswa aktif di batch ini" />}
+      <Panel title={`Pengumpulan siswa (${students.length})`}>
+        {students.length === 0 ? (
+          <EmptyState icon="users" title="Belum ada siswa aktif di batch ini" />
+        ) : (
+          <ul className="space-y-2">
+            {[...students]
+              .sort((x, y) => order[x.state] - order[y.state])
+              .map((st, i) => {
+                const last = st.versions[st.versions.length - 1];
+                return (
+                  <li key={st.student_id}>
+                    <details open={i === 0 && st.state === "waiting"} className="group rounded-xl border border-orange/20 open:border-orange/60">
+                      <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-3 px-4 py-3">
+                        <span>
+                          <span className="block font-bold text-white">{st.full_name}</span>
+                          <span className="block text-xs text-amber-200/70">
+                            {last ? `${last.version === 1 ? "Dikumpulkan" : `Revisi ${last.version - 1}`} ${formatDateTime(last.submitted_at)}${last.is_late ? " · terlambat" : ""}` : "Belum mengumpulkan"}
+                            {!st.has_account ? " · lewat akun wali" : ""}
+                          </span>
+                        </span>
+                        <span className="flex items-center gap-2">
+                          <TaskStateBadge state={st.state} />
+                          <span className="text-xs text-orange group-open:rotate-180">▾</span>
+                        </span>
+                      </summary>
+                      <div className="space-y-4 border-t border-orange/15 px-4 py-4">
+                        {st.versions.length === 0 ? (
+                          <p className="text-sm text-slate-400">Belum mengumpulkan.</p>
+                        ) : (
+                          <>
+                            {last.status === "submitted" && (
+                              <FeedbackForm
+                                key={last.id}
+                                submissionId={last.id}
+                                draft={last.feedback ? { body: last.feedback.body, decision: last.feedback.decision } : null}
+                                canRevise={last.version < 3}
+                              />
+                            )}
+                            <SubmissionHistory versions={st.versions} showDrafts />
+                          </>
+                        )}
+                      </div>
+                    </details>
+                  </li>
+                );
+              })}
+          </ul>
+        )}
+      </Panel>
     </div>
   );
 }

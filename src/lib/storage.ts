@@ -58,7 +58,8 @@ export async function signedUpload(bucket: BucketKey, path: string) {
 
 export async function fileExists(bucket: BucketKey, path: string) {
   const folder = path.slice(0, path.lastIndexOf("/"));
-  const { data } = await createAdminClient().storage.from(BUCKETS[bucket].name).list(folder);
+  // Dicari per nama file: daftar folder dibatasi 100 berkas per halaman.
+  const { data } = await createAdminClient().storage.from(BUCKETS[bucket].name).list(folder, { search: path.slice(folder.length + 1) });
   return Boolean(data?.some((f) => `${folder}/${f.name}` === path));
 }
 

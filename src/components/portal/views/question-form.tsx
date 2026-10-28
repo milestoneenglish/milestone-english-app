@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { toast } from "@/components/toast";
 import { useState, useTransition } from "react";
 import { attachAudio, audioUploadTarget, saveQuestion, type QuestionInput } from "@/app/portal/bank-actions";
 import { createClient } from "@/lib/supabase/client";
@@ -31,7 +32,8 @@ export function QuestionForm({ initial, hasAudio }: { initial: QuestionInput; ha
     setError("");
     start(async () => {
       const res = await saveQuestion(q);
-      if (!res.ok) return setError(res.error);
+      if (!res.ok) { toast.error(res.error); return setError(res.error); }
+      toast.success("Soal tersimpan");
       setSaved(true);
       if (!q.id && res.id) router.replace(`/portal/lead/bank-soal?id=${res.id}`);
       router.refresh();
@@ -47,6 +49,7 @@ export function QuestionForm({ initial, hasAudio }: { initial: QuestionInput; ha
     if (up.error) return setAudioMsg("Audio gagal diunggah.");
     const res = await attachAudio(q.group_key, target.path);
     setAudioMsg(res.ok ? "Audio terpasang untuk semua soal di kelompok ini." : res.error);
+    if (res.ok) toast.success("Audio terpasang"); else toast.error(res.error);
     router.refresh();
   }
 

@@ -17,6 +17,18 @@ export const SECTION_LABEL: Record<SectionName, string> = {
   speaking: "Speaking",
 };
 
+// Penjelasan singkat level CEFR untuk siswa dan wali. C1 hanya muncul di laporan akhir program lanjutan.
+export const LEVEL_INFO: Record<string, { name: string; text: string }> = {
+  "Pre-A1": { name: "Pemula", text: "Baru mengenal kata dan ungkapan sangat dasar, misalnya salam dan angka." },
+  A1: { name: "Dasar", text: "Bisa memperkenalkan diri dan memahami kalimat sederhana tentang hal sehari-hari." },
+  A2: { name: "Dasar lanjut", text: "Bisa bercakap tentang rutinitas dan kebutuhan sehari-hari dengan kalimat sederhana." },
+  B1: { name: "Menengah", text: "Bisa menceritakan pengalaman, memberi pendapat singkat, dan menghadapi situasi umum dalam bahasa Inggris." },
+  B2: { name: "Menengah atas", text: "Bisa berdiskusi cukup lancar dan memahami percakapan maupun teks yang lebih kompleks." },
+  C1: { name: "Mahir", text: "Bisa memakai bahasa Inggris secara fleksibel untuk studi, pekerjaan, dan presentasi." },
+};
+
+export const levelTitle = (level?: string | null) => (level && LEVEL_INFO[level] ? `${level} · ${LEVEL_INFO[level].name}: ${LEVEL_INFO[level].text}` : undefined);
+
 // Pilihan ganda: persentase benar menjadi level.
 export function levelFromPercent(percent: number): Level {
   if (percent < 20) return "Pre-A1";

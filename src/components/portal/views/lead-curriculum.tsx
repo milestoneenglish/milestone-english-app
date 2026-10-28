@@ -2,7 +2,7 @@ import Link from "next/link";
 import { curriculumOverview, getCurriculum, type CurriculumRow, type ModuleRow } from "@/lib/curriculum";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Viewer } from "@/lib/session";
-import { Badge, EmptyState, formatDateTime, Notice, PageHeader, Panel } from "../ui";
+import { Badge, EmptyState, formatDateTime, Notice, greeting, PageHeader, Panel } from "../ui";
 import { ASSESSMENT_LABEL } from "@/lib/academic";
 import { leadReports } from "@/lib/reports";
 import { AssessmentPointSelect, RubricEditor } from "./academic-forms";
@@ -39,7 +39,7 @@ export async function LeadHome({ viewer }: { viewer: Viewer }) {
   const firstName = (viewer.fullName || viewer.email).split(/[\s@]/)[0];
   return (
     <div className="fade-in space-y-6">
-      <PageHeader title={`Halo, ${firstName}!`} subtitle="Perlu tindakan hari ini." />
+      <PageHeader title={greeting(firstName)} subtitle="Perlu tindakan hari ini." />
       {reports.some((r) => r.overdue) && <Notice tone="red">{reports.filter((r) => r.overdue).length} laporan menunggu review lebih dari 2 hari.</Notice>}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <QueueCard

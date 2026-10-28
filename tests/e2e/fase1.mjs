@@ -35,7 +35,7 @@ async function makeUser(who, meta = {}, roles = []) {
   if (error) throw new Error(`Gagal membuat ${who}: ${error.message}`);
   created.users.push(data.user.id);
   for (const role of roles) await admin.from("user_roles").insert({ user_id: data.user.id, role });
-  return { id: data.user.id, email: email(who), password: pw, name: meta.full_name };
+  return { id: data.user.id, email: email(who), password: pw, name: meta.full_name, team: roles.length > 0 };
 }
 
 async function shot(page, name) {
@@ -43,7 +43,7 @@ async function shot(page, name) {
 }
 
 async function login(page, user) {
-  await page.goto(`${BASE}/masuk`);
+  await page.goto(`${BASE}/${user.team ? "tim" : "masuk"}`);
   await page.getByLabel("Email", { exact: true }).fill(user.email);
   await page.getByPlaceholder("Password").fill(user.password);
   await page.getByRole("button", { name: "Masuk", exact: true }).click();
@@ -343,8 +343,9 @@ try {
     await admin.from("placement_attempts").delete().in("id", (atts ?? []).map((a) => a.id));
     await admin.from("students").delete().in("id", studentIds);
     await admin.from("audit_log").delete().in("actor_id", created.users);
-    await admin.from("audit_log").delete().in("entity_id", created.users);
     for (const id of new Set(created.users)) await admin.auth.admin.deleteUser(id);
+    // Setelah akun dihapus, karena penghapusan akun ikut menulis audit (role dicabut).
+    await admin.from("audit_log").delete().in("entity_id", created.users);
     console.log("Data uji dibersihkan.");
   }
   const failed = results.filter((r) => !r.ok);
