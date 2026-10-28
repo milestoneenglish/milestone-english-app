@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <?!= include('Render'); ?>
+  <style>
+    :root {
+      --ink: #152949; --ink-2: #475467; --muted: #667085; --line: #e4e7ec; --bg: #f5f6f8; --card: #ffffff;
+      --brand: #f17a16; --brand-soft: #fff3e8; --danger: #b42318; --danger-soft: #fef3f2;
+      --ok: #067647; --ok-soft: #ecfdf3; --info: #1849a9; --info-soft: #eff4ff; --radius: 14px;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; }
+    body { font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif; background: var(--bg); color: var(--ink); font-size: 15px; -webkit-font-smoothing: antialiased; }
+    [hidden] { display: none !important; }
+    h1, h2, h3 { margin: 0; letter-spacing: -.01em; }
+    h2 { font-size: 20px; }
+    h3 { font-size: 15px; }
+    a { color: inherit; }
+    .hint { margin: 4px 0 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
+
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 40px; padding: 0 16px;
+      border-radius: 10px; border: 1px solid transparent; font: inherit; font-weight: 600; font-size: 14px; cursor: pointer; text-decoration: none; white-space: nowrap; }
+    .btn:disabled { opacity: .55; cursor: default; }
+    .btn-primary { background: var(--brand); color: var(--ink); }
+    .btn-primary:hover:not(:disabled) { filter: brightness(.96); }
+    .btn-ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+    .btn-ghost:hover { background: #fff; }
+    .btn-danger { background: var(--danger-soft); color: var(--danger); }
+    .btn-danger.is-confirm { background: var(--danger); color: #fff; }
+    .icon-btn { width: 32px; height: 28px; display: grid; place-items: center; border: 0; background: transparent; color: var(--ink-2); border-radius: 8px; cursor: pointer; }
+    .icon-btn:hover:not(:disabled) { background: var(--bg); }
+    .icon-btn:disabled { opacity: .3; cursor: default; }
+    .icon-btn svg, .btn svg { width: 18px; height: 18px; }
+    button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, a:focus-visible { outline: 3px solid rgba(241,122,22,.45); outline-offset: 2px; }
+
+    /* Login */
+    .login { min-height: 100vh; display: grid; place-items: center; padding: 24px 16px; background: #0b1426; }
+    .login-card { width: 100%; max-width: 360px; background: #fff; border-radius: 20px; padding: 32px 24px; text-align: center; }
+    .login-card img { width: 64px; height: 64px; border-radius: 16px; }
+    .login-card h1 { font-size: 22px; margin-top: 16px; }
+    .pin { width: 100%; margin-top: 20px; height: 60px; text-align: center; font-size: 30px; letter-spacing: 18px; padding-left: 18px;
+      border: 1.5px solid var(--line); border-radius: 12px; font-family: inherit; color: var(--ink); }
+    .pin:focus { border-color: var(--brand); outline: none; }
+    .msg { min-height: 20px; margin: 12px 0; color: var(--danger); font-size: 14px; }
+    .login-card .btn { width: 100%; min-height: 46px; }
+
+    /* Rangka */
+    .top { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 10px 16px; background: #fff; border-bottom: 1px solid var(--line); }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; min-width: 0; }
+    .brand img { width: 32px; height: 32px; border-radius: 8px; }
+    .brand span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .top-actions { display: flex; gap: 8px; }
+    .layout { max-width: 1180px; margin: 0 auto; padding: 16px 16px 120px; display: grid; gap: 24px; }
+    @media (min-width: 960px) { .layout { grid-template-columns: minmax(0, 1fr) 380px; padding-top: 24px; } }
+    .layout > main { min-width: 0; }
+    .tabs { display: flex; gap: 4px; overflow-x: auto; margin: 0 -16px 16px; padding: 0 16px; scrollbar-width: none; }
+    .tabs::-webkit-scrollbar { display: none; }
+    .tab { flex: none; min-height: 40px; padding: 0 14px; border: 0; border-radius: 999px; background: transparent; color: var(--ink-2); font: inherit; font-weight: 600; font-size: 14px; cursor: pointer; }
+    .tab[aria-selected="true"] { background: var(--ink); color: #fff; }
+    .panel-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; }
+    .card > h3 { margin-bottom: 4px; }
+    .empty { text-align: center; padding: 32px 16px; color: var(--muted); background: #fff; border: 1px dashed var(--line); border-radius: var(--radius); }
+
+    /* Isian */
+    .field { display: block; margin-top: 12px; }
+    .field > span { display: block; font-size: 13px; font-weight: 600; color: var(--ink-2); margin-bottom: 6px; }
+    .field input, .field select, .field textarea { width: 100%; min-height: 42px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; font: inherit; color: var(--ink); background: #fff; }
+    .field textarea { min-height: 84px; resize: vertical; line-height: 1.5; }
+    .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--brand); outline: none; box-shadow: 0 0 0 3px rgba(241,122,22,.15); }
+    .grid2 { display: grid; gap: 0 12px; }
+    @media (min-width: 560px) { .grid2 { grid-template-columns: 1fr 1fr; } }
+    .check { display: flex; align-items: center; gap: 10px; margin-top: 14px; font-size: 14px; cursor: pointer; }
+    .check input { width: 18px; height: 18px; accent-color: var(--brand); }
+    .row-end { display: flex; justify-content: flex-end; margin-top: 16px; }
+    .counter { float: right; font-weight: 500; color: var(--muted); }
+
+    .switch { position: relative; flex: none; width: 44px; height: 26px; cursor: pointer; }
+    .switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+    .switch span { position: absolute; inset: 0; border-radius: 999px; background: #d0d5dd; transition: background .15s; pointer-events: none; }
+    .switch span::after { content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: transform .15s; box-shadow: 0 1px 2px rgba(0,0,0,.2); }
+    .switch input:checked + span { background: var(--ok); }
+    .switch input:checked + span::after { transform: translateX(18px); }
+    .switch input:focus-visible + span { outline: 3px solid rgba(241,122,22,.45); outline-offset: 2px; }
+
+    /* Kartu link */
+    .link { padding: 8px 12px 8px 4px; }
+    .link-head { display: flex; align-items: center; gap: 6px; }
+    .order { display: flex; flex-direction: column; }
+    .link-sum { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; padding: 8px 4px; border: 0; background: transparent; text-align: left; font: inherit; color: inherit; cursor: pointer; border-radius: 10px; }
+    .link-ico { flex: none; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 10px; background: var(--bg); color: var(--ink); }
+    .link-ico svg { width: 20px; height: 20px; }
+    .link-text { flex: 1; min-width: 0; }
+    .link-text strong, .link-text small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .link-text small { color: var(--muted); font-size: 12px; margin-top: 2px; }
+    .badges { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px; }
+    .badge { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 999px; white-space: nowrap; }
+    .badge.ok { background: var(--ok-soft); color: var(--ok); }
+    .badge.info { background: var(--info-soft); color: var(--info); }
+    .badge.muted { background: var(--bg); color: var(--muted); }
+    .badge.accent { background: var(--brand-soft); color: #93370d; }
+    .link-body { padding: 4px 8px 8px 44px; border-top: 1px solid var(--line); margin-top: 8px; }
+    @media (max-width: 559px) { .badges .badge.accent { display: none; } .link-body { padding-left: 8px; } }
+
+    /* Profil & tampilan */
+    .logo-row { display: flex; align-items: center; gap: 16px; margin-top: 12px; flex-wrap: wrap; }
+    .logo-box { width: 80px; height: 80px; border-radius: 50%; background: var(--bg) center/cover no-repeat; border: 1px solid var(--line); display: grid; place-items: center; font-weight: 800; font-size: 28px; color: var(--muted); }
+    .logo-box.is-raw { border-radius: 12px; background-size: contain; width: 120px; }
+    .logo-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .seg { display: inline-flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .seg label { position: relative; }
+    .seg input { position: absolute; opacity: 0; }
+    .seg span { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 14px; border: 1px solid var(--line); border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; background: #fff; }
+    .seg input:checked + span { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+    .seg input:focus-visible + span { outline: 3px solid rgba(241,122,22,.45); }
+    .shape-sample { width: 28px; height: 14px; background: var(--ink); }
+    .presets { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin-top: 12px; }
+    .preset { display: flex; align-items: center; gap: 10px; padding: 10px; border: 1px solid var(--line); border-radius: 12px; background: #fff; font: inherit; font-weight: 600; font-size: 14px; cursor: pointer; color: var(--ink); text-align: left; }
+    .preset:hover { border-color: var(--ink-2); }
+    .swatch { flex: none; width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; border: 1px solid rgba(0,0,0,.08); }
+    .swatch i { width: 18px; height: 8px; border-radius: 4px; }
+    .colors { display: grid; gap: 0 12px; grid-template-columns: 1fr 1fr; }
+    @media (min-width: 560px) { .colors { grid-template-columns: repeat(3, 1fr); } }
+    .color { display: flex; align-items: center; gap: 10px; min-height: 42px; padding: 4px 10px 4px 4px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+    .color input { width: 34px; height: 34px; padding: 0; border: 0; border-radius: 8px; background: none; cursor: pointer; }
+    .color code { font-size: 13px; color: var(--ink-2); }
+    .warn { margin-top: 12px; padding: 10px 12px; border-radius: 10px; background: #fffaeb; color: #93370d; font-size: 13px; line-height: 1.5; }
+
+    /* Statistik */
+    .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+    .tile { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; }
+    .tile small { display: block; color: var(--muted); font-size: 12px; font-weight: 600; }
+    .tile strong { display: block; font-size: 26px; margin-top: 4px; font-variant-numeric: tabular-nums; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { padding: 10px 6px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }
+    th { font-size: 12px; color: var(--muted); font-weight: 600; }
+    td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; width: 64px; }
+    .bar { height: 8px; border-radius: 4px; background: var(--brand); min-width: 2px; }
+    .bar-cell { width: 34%; }
+    .gone { color: var(--muted); font-size: 12px; }
+    details > summary { cursor: pointer; font-weight: 600; padding: 4px 0; }
+    td small { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
+    .archive-files { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+
+    /* Pratinjau */
+    .preview { position: sticky; top: 76px; align-self: start; }
+    .preview-label { display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px; }
+    .phone { width: 100%; max-width: 360px; height: min(720px, calc(100vh - 130px)); margin: 0 auto; border: 10px solid #111827; border-radius: 36px; overflow: hidden; background: #000; }
+    .phone-screen { height: 100%; overflow-y: auto; }
+    .preview-close { display: none; }
+    .preview-fab { display: none; }
+    @media (max-width: 959px) {
+      .preview { display: none; }
+      .preview.is-open { display: block; position: fixed; inset: 0; z-index: 40; background: rgba(11,20,38,.92); padding: 16px; }
+      .preview.is-open .preview-label { color: #fff; }
+      .preview.is-open .preview-close { display: inline-flex; color: #fff; border-color: rgba(255,255,255,.3); }
+      .preview.is-open .phone { height: calc(100vh - 80px); }
+      .preview-fab { display: inline-flex; position: fixed; right: 16px; bottom: 16px; z-index: 30; box-shadow: 0 6px 20px rgba(0,0,0,.2); }
+      body.has-savebar .preview-fab { bottom: 84px; }
+    }
+
+    .savebar { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 35; width: calc(100% - 32px); max-width: 640px;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 10px 10px 16px;
+      background: var(--ink); color: #fff; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.25); font-size: 14px; }
+    .savebar .btn-ghost { color: #fff; border-color: rgba(255,255,255,.3); }
+    .savebar .btn-ghost:hover { background: rgba(255,255,255,.08); }
+    .savebar div { display: flex; gap: 8px; }
+    @media (max-width: 480px) { .savebar span { font-size: 13px; } .savebar .btn { padding: 0 12px; } }
+
+    .toast { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 60; max-width: calc(100% - 32px);
+      padding: 12px 16px; border-radius: 12px; background: var(--ink); color: #fff; font-size: 14px; box-shadow: 0 8px 24px rgba(0,0,0,.2); }
+    .toast.is-error { background: var(--danger); }
+    .loading { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; background: rgba(245,246,248,.7); font-weight: 600; color: var(--ink-2); }
+  </style>
+</head>
+<body>
+  <div id="login" class="login" hidden>
+    <form id="loginForm" class="login-card" autocomplete="off">
+      <img id="loginLogo" src="<?!= DEFAULT_LOGO ?>" alt="">
+      <h1>Admin Linktree</h1>
+      <p class="hint">Masukkan PIN 4 angka.</p>
+      <input id="pin" class="pin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" aria-label="PIN 4 angka">
+      <p id="loginMsg" class="msg" role="alert"></p>
+      <button id="loginBtn" class="btn btn-primary" type="submit">Masuk</button>
+    </form>
+  </div>
+
+  <div id="app" hidden>
+    <header class="top">
+      <div class="brand"><img id="brandLogo" src="<?!= DEFAULT_LOGO ?>" alt=""><span>Admin Linktree</span></div>
+      <div class="top-actions">
+        <a id="viewLink" class="btn btn-ghost" target="_blank" rel="noopener">Lihat halaman</a>
+        <button id="logoutBtn" class="btn btn-ghost" type="button">Keluar</button>
+      </div>
+    </header>
+    <div class="layout">
+      <main>
+        <nav class="tabs" role="tablist" aria-label="Menu admin">
+          <button class="tab" role="tab" data-tab="links">Link</button>
+          <button class="tab" role="tab" data-tab="profil">Profil & kontak</button>
+          <button class="tab" role="tab" data-tab="tampilan">Tampilan</button>
+          <button class="tab" role="tab" data-tab="statistik">Statistik</button>
+          <button class="tab" role="tab" data-tab="keamanan">Keamanan</button>
+        </nav>
+        <div id="panel"></div>
+      </main>
+      <aside id="previewPane" class="preview" aria-label="Pratinjau">
+        <div class="preview-label"><span>Pratinjau di HP</span><button id="previewClose" class="btn btn-ghost preview-close" type="button">Tutup</button></div>
+        <div class="phone"><div id="preview" class="phone-screen"></div></div>
+      </aside>
+    </div>
+    <button id="previewFab" class="btn btn-primary preview-fab" type="button">Pratinjau</button>
+    <div id="savebar" class="savebar" hidden>
+      <span>Ada perubahan yang belum disimpan.</span>
+      <div>
+        <button id="discardBtn" class="btn btn-ghost" type="button">Batalkan</button>
+        <button id="saveBtn" class="btn btn-primary" type="button">Simpan</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" role="status" hidden></div>
+  <div id="loading" class="loading" hidden>Memuat…</div>
+
+  <script>
+    var ICON_OPTIONS = [
+      ['link', 'Link'], ['form', 'Formulir'], ['star', 'Bintang'], ['book', 'Buku / program'], ['cap', 'Kelas'],
+      ['calendar', 'Jadwal'], ['play', 'Video'], ['users', 'Testimoni'], ['tag', 'Promo'], ['chat', 'Chat'],
+      ['whatsapp', 'WhatsApp'], ['pin', 'Lokasi'], ['instagram', 'Instagram'], ['youtube', 'YouTube'],
+      ['tiktok', 'TikTok'], ['globe', 'Website'], ['none', 'Tanpa ikon']
+    ];
+    var PRESETS = [
+      { name: 'Navy Milestone', c: { warna_latar: '#0b1426', warna_teks: '#ffffff', warna_tombol: '#ffffff', warna_teks_tombol: '#152949', warna_unggulan: '#f17a16', warna_teks_unggulan: '#152949' } },
+      { name: 'Terang', c: { warna_latar: '#fff8f1', warna_teks: '#152949', warna_tombol: '#152949', warna_teks_tombol: '#ffffff', warna_unggulan: '#f17a16', warna_teks_unggulan: '#152949' } },
+      { name: 'Oranye', c: { warna_latar: '#f17a16', warna_teks: '#152949', warna_tombol: '#152949', warna_teks_tombol: '#ffffff', warna_unggulan: '#ffffff', warna_teks_unggulan: '#152949' } }
+    ];
+    var COLORS = [
+      ['warna_latar', 'Latar'], ['warna_teks', 'Teks'], ['warna_tombol', 'Tombol'],
+      ['warna_teks_tombol', 'Teks tombol'], ['warna_unggulan', 'Tombol unggulan'], ['warna_teks_unggulan', 'Teks unggulan']
+    ];
+    var SVG = {
+      up: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>',
+      down: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>'
+    };
+    var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+
+    var token = loadToken();
+    var saved = null;
+    var state = null;
+    var defaults = {};
+    var execUrl = '';
+    var sheetUrl = '';
+    var tab = 'links';
+    var openIds = {};
+    var statsDays = 30;
+    var confirmTimer = null;
+    var $ = function (id) { return document.getElementById(id); };
+
+    // ---------------------------------------------------------- Server
+
+    function loadToken() { try { return localStorage.getItem('mlt_token'); } catch (e) { return null; } }
+    function saveToken(v) { try { v ? localStorage.setItem('mlt_token', v) : localStorage.removeItem('mlt_token'); } catch (e) {} }
+
+    function call(name) {
+      var args = Array.prototype.slice.call(arguments, 1);
+      return new Promise(function (resolve, reject) {
+        var run = google.script.run.withSuccessHandler(resolve).withFailureHandler(reject);
+        run[name].apply(run, args);
+      });
+    }
+
+    function api(name) {
+      var args = Array.prototype.slice.call(arguments, 1);
+      return call.apply(null, [name, token].concat(args)).then(function (res) {
+        if (res && res.auth) { showLogin(res.error); throw new Error('auth'); }
+        if (!res || !res.ok) { var msg = (res && res.error) || 'Terjadi kesalahan.'; toast(msg, true); throw new Error(msg); }
+        return res.data;
+      }, function (err) {
+        toast('Koneksi gagal. Periksa internet lalu coba lagi.', true);
+        throw err;
+      });
+    }
+
+    function busy(on) { $('loading').hidden = !on; }
+
+    // ---------------------------------------------------------- Login
+
+    function showLogin(message) {
+      token = null;
+      saveToken(null);
+      $('app').hidden = true;
+      $('login').hidden = false;
+      $('loginMsg').textContent = message || '';
+      $('pin').value = '';
+      setTimeout(function () { $('pin').focus(); }, 50);
+    }
+
+    function submitPin() {
+      var pin = $('pin').value;
+      if (!/^\d{4}$/.test(pin)) { $('loginMsg').textContent = 'PIN harus 4 angka.'; return; }
+      $('loginBtn').disabled = true;
+      $('loginMsg').textContent = '';
+      call('login', pin).then(function (res) {
+        $('loginBtn').disabled = false;
+        if (!res.ok) {
+          $('loginMsg').textContent = res.error;
+          $('pin').value = '';
+          $('pin').focus();
+          return;
+        }
+        token = res.token;
+        saveToken(token);
+        loadAll();
+      }, function () {
+        $('loginBtn').disabled = false;
+        $('loginMsg').textContent = 'Koneksi gagal. Coba lagi.';
+      });
+    }
+
+    $('loginForm').addEventListener('submit', function (e) { e.preventDefault(); submitPin(); });
+    $('pin').addEventListener('input', function () {
+      this.value = this.value.replace(/\D/g, '').slice(0, 4);
+      if (this.value.length === 4) submitPin();
+    });
+
+    $('logoutBtn').addEventListener('click', function () {
+      if (isDirty() && !window.confirm('Perubahan belum disimpan. Tetap keluar?')) return;
+      var t = token;
+      saved = state = null;
+      showLogin('Kamu sudah keluar.');
+      call('logout', t).catch(function () {});
+    });
+
+    // ---------------------------------------------------------- Data
+
+    function loadAll() {
+      busy(true);
+      api('adminLoad').then(function (d) {
+        execUrl = d.execUrl;
+        sheetUrl = d.sheetUrl;
+        defaults = d.defaults || {};
+        apply(d);
+        $('login').hidden = true;
+        $('app').hidden = false;
+        if (execUrl) $('viewLink').href = execUrl; else $('viewLink').hidden = true;
+        render();
+      }).catch(function (err) {
+        if (err.message !== 'auth') showLogin('Gagal memuat data. Coba masuk lagi.');
+      }).then(function () { busy(false); });
+    }
+
+    function apply(d) {
+      saved = JSON.parse(JSON.stringify({ settings: d.settings, links: d.links }));
+      state = JSON.parse(JSON.stringify(saved));
+      var logo = state.settings.logo || defaults.logo || '';
+      $('brandLogo').src = logo;
+      $('loginLogo').src = logo;
+    }
+
+    function isDirty() { return !!state && JSON.stringify(state) !== JSON.stringify(saved); }
+
+    function changed() {
+      var dirty = isDirty();
+      $('savebar').hidden = !dirty;
+      document.body.classList.toggle('has-savebar', dirty);
+      schedulePreview();
+    }
+
+    $('saveBtn').addEventListener('click', function () {
+      var btn = this;
+      btn.disabled = true;
+      btn.textContent = 'Menyimpan…';
+      api('adminSave', state).then(function (d) {
+        apply(d);
+        render();
+        toast('Tersimpan. Halaman publik sudah berubah.');
+      }).catch(function () {}).then(function () {
+        btn.disabled = false;
+        btn.textContent = 'Simpan';
+      });
+    });
+
+    $('discardBtn').addEventListener('click', function () {
+      state = JSON.parse(JSON.stringify(saved));
+      render();
+    });
+
+    window.addEventListener('beforeunload', function (e) {
+      if (isDirty()) { e.preventDefault(); e.returnValue = ''; }
+    });
+
+    // ---------------------------------------------------------- Tampilan umum
+
+    function render() {
+      Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (b) {
+        b.setAttribute('aria-selected', String(b.getAttribute('data-tab') === tab));
+      });
+      var panel = $('panel');
+      if (tab === 'links') panel.innerHTML = linksPanel();
+      else if (tab === 'profil') panel.innerHTML = profilPanel();
+      else if (tab === 'tampilan') panel.innerHTML = tampilanPanel();
+      else if (tab === 'statistik') { panel.innerHTML = '<div class="empty">Memuat statistik…</div>'; loadStats(); }
+      else panel.innerHTML = keamananPanel();
+      changed();
+    }
+
+    Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (b) {
+      b.addEventListener('click', function () { tab = b.getAttribute('data-tab'); render(); });
+    });
+
+    var previewQueued = false;
+    function schedulePreview() {
+      if (previewQueued || !state) return;
+      previewQueued = true;
+      requestAnimationFrame(function () {
+        previewQueued = false;
+        var t = wibToday();
+        renderLinktree($('preview'), {
+          settings: state.settings,
+          links: state.links.filter(function (l) { return live(l, t); })
+        }, { preview: true, onGo: function (item, e) { e.preventDefault(); } });
+      });
+    }
+
+    $('previewFab').addEventListener('click', function () { $('previewPane').classList.add('is-open'); });
+    $('previewClose').addEventListener('click', function () { $('previewPane').classList.remove('is-open'); });
+
+    function toast(message, error) {
+      var el = $('toast');
+      el.textContent = message;
+      el.className = 'toast' + (error ? ' is-error' : '');
+      el.hidden = false;
+      clearTimeout(toast.t);
+      toast.t = setTimeout(function () { el.hidden = true; }, error ? 6000 : 3000);
+    }
+
+    function wibToday() {
+      return new Date(Date.now() + 7 * 3600000).toISOString().slice(0, 10);
+    }
+
+    function live(l, t) {
+      return l.aktif && (!l.mulai || l.mulai <= t) && (!l.sampai || l.sampai >= t);
+    }
+
+    function fmtDate(d) {
+      var p = d.split('-');
+      return Number(p[2]) + ' ' + MONTHS[Number(p[1]) - 1] + ' ' + p[0];
+    }
+
+    var esc = ltEsc;
+
+    // ---------------------------------------------------------- Link
+
+    function linkStatus(l, t) {
+      if (!l.aktif) return ['Off', 'muted'];
+      if (l.mulai && l.mulai > t) return ['Mulai ' + fmtDate(l.mulai), 'info'];
+      if (l.sampai && l.sampai < t) return ['Berakhir', 'muted'];
+      if (l.sampai) return ['Sampai ' + fmtDate(l.sampai), 'ok'];
+      return ['Tampil', 'ok'];
+    }
+
+    function linksPanel() {
+      var t = wibToday();
+      var n = state.links.length;
+      return '<div class="panel-head"><div><h2>Link</h2><p class="hint">Urutan di sini sama dengan urutan di halaman. Klik sebuah link untuk mengubahnya.</p></div>' +
+        '<button class="btn btn-primary" type="button" data-act="add">+ Tambah link</button></div>' +
+        (n ? state.links.map(function (l, i) { return linkCard(l, i, n, t); }).join('') :
+          '<div class="empty">Belum ada link. Klik <b>Tambah link</b>.</div>');
+    }
+
+    function linkCard(l, i, n, t) {
+      var open = !!openIds[l.id];
+      var st = linkStatus(l, t);
+      var icons = ICON_OPTIONS.map(function (o) {
+        return '<option value="' + o[0] + '"' + (l.ikon === o[0] ? ' selected' : '') + '>' + o[1] + '</option>';
+      }).join('');
+      return '<article class="card link" data-idx="' + i + '">' +
+        '<div class="link-head">' +
+          '<div class="order">' +
+            '<button class="icon-btn" type="button" data-act="up" aria-label="Naikkan"' + (i === 0 ? ' disabled' : '') + '>' + SVG.up + '</button>' +
+            '<button class="icon-btn" type="button" data-act="down" aria-label="Turunkan"' + (i === n - 1 ? ' disabled' : '') + '>' + SVG.down + '</button>' +
+          '</div>' +
+          '<button class="link-sum" type="button" data-act="open" aria-expanded="' + open + '">' +
+            '<span class="link-ico">' + ltIcon(l.ikon === 'none' ? '' : l.ikon) + '</span>' +
+            '<span class="link-text"><strong data-show="judul">' + (esc(l.judul) || '(tanpa judul)') + '</strong><small data-show="url">' + esc(l.url) + '</small></span>' +
+            '<span class="badges">' + (l.unggulan ? '<span class="badge accent">Unggulan</span>' : '') + '<span class="badge ' + st[1] + '">' + st[0] + '</span></span>' +
+          '</button>' +
+          '<label class="switch" title="Tampilkan di halaman"><input type="checkbox" data-f="aktif"' + (l.aktif ? ' checked' : '') + ' aria-label="Tampilkan ' + esc(l.judul) + '"><span></span></label>' +
+        '</div>' +
+        '<div class="link-body"' + (open ? '' : ' hidden') + '>' +
+          '<div class="grid2">' +
+            '<label class="field"><span>Judul tombol</span><input data-f="judul" maxlength="80" value="' + esc(l.judul) + '"></label>' +
+            '<label class="field"><span>Ikon</span><select data-f="ikon">' + icons + '</select></label>' +
+          '</div>' +
+          '<label class="field"><span>Alamat link (URL)</span><input data-f="url" inputmode="url" autocapitalize="off" spellcheck="false" placeholder="https://..." value="' + esc(l.url) + '"></label>' +
+          '<label class="field"><span>Keterangan kecil di bawah judul (opsional)</span><input data-f="keterangan" maxlength="120" value="' + esc(l.keterangan) + '"></label>' +
+          '<label class="check"><input type="checkbox" data-f="unggulan"' + (l.unggulan ? ' checked' : '') + '> Jadikan tombol unggulan (warna menonjol)</label>' +
+          '<div class="grid2">' +
+            '<label class="field"><span>Tampil mulai (opsional)</span><input type="date" data-f="mulai" value="' + esc(l.mulai) + '"></label>' +
+            '<label class="field"><span>Tampil sampai (opsional)</span><input type="date" data-f="sampai" value="' + esc(l.sampai) + '"></label>' +
+          '</div>' +
+          '<p class="hint">Kosongkan tanggal agar link selalu tampil. Cocok untuk promo atau pendaftaran batch.</p>' +
+          '<div class="row-end"><button class="btn btn-danger" type="button" data-act="delete">Hapus link</button></div>' +
+        '</div>' +
+      '</article>';
+    }
+
+    function newId() {
+      return 'l-' + Math.random().toString(36).slice(2, 10);
+    }
+
+    // ---------------------------------------------------------- Profil & kontak
+
+    function input(key, label, opts) {
+      opts = opts || {};
+      var v = state.settings[key] || '';
+      var counter = opts.max ? '<span class="counter" data-count="' + key + '">' + v.length + '/' + opts.max + '</span>' : '';
+      var attrs = ' data-s="' + key + '"' + (opts.max ? ' maxlength="' + opts.max + '"' : '') + (opts.placeholder ? ' placeholder="' + esc(opts.placeholder) + '"' : '') + (opts.attrs || '');
+      var control = opts.area ? '<textarea' + attrs + '>' + esc(v) + '</textarea>' : '<input' + attrs + ' value="' + esc(v) + '">';
+      return '<label class="field"><span>' + label + counter + '</span>' + control + (opts.hint ? '<p class="hint">' + opts.hint + '</p>' : '') + '</label>';
+    }
+
+    function radios(key, options) {
+      return '<div class="seg" role="radiogroup">' + options.map(function (o) {
+        return '<label><input type="radio" name="' + key + '" value="' + o[0] + '" data-s="' + key + '"' + (state.settings[key] === o[0] ? ' checked' : '') + '><span>' + o[1] + '</span></label>';
+      }).join('') + '</div>';
+    }
+
+    function profilPanel() {
+      var s = state.settings;
+      var raw = s.logo_bentuk === 'asli';
+      var logoBox = '<div class="logo-box' + (raw ? ' is-raw' : '') + '" style="background-image:url(&quot;' + esc(s.logo) + '&quot;)">' + (s.logo ? '' : esc((s.nama || 'M').charAt(0))) + '</div>';
+      return '<div class="panel-head"><div><h2>Profil & kontak</h2><p class="hint">Bagian atas halaman, tombol WhatsApp, dan ikon sosial media.</p></div></div>' +
+        '<section class="card"><h3>Profil</h3>' +
+          '<div class="logo-row">' + logoBox + '<div class="logo-actions">' +
+            '<label class="btn btn-ghost">Unggah logo<input id="logoFile" type="file" accept="image/png,image/jpeg,image/webp" hidden></label>' +
+            (defaults.logo && s.logo !== defaults.logo ? '<button class="btn btn-ghost" type="button" data-act="logo-default">Pakai logo Milestone</button>' : '') +
+            (s.logo ? '<button class="btn btn-ghost" type="button" data-act="logo-remove">Hapus logo</button>' : '') +
+          '</div></div>' +
+          '<p class="hint">Gambar otomatis diperkecil. Kalau logo dihapus, halaman menampilkan huruf pertama nama.</p>' +
+          '<div class="field"><span>Bentuk logo</span>' + radios('logo_bentuk', [['bulat', 'Lingkaran'], ['asli', 'Bentuk asli']]) + '</div>' +
+          input('nama', 'Nama', { max: 60 }) +
+          input('bio', 'Bio', { max: 300, area: true, hint: 'Tekan Enter untuk baris baru.' }) +
+          input('footer', 'Tulisan paling bawah', { max: 80 }) +
+        '</section>' +
+        '<section class="card"><h3>Tombol WhatsApp</h3><p class="hint">Tampil sebagai tombol terakhir. Pesan otomatis sudah terisi saat chat dibuka.</p>' +
+          '<label class="check"><input type="checkbox" data-s="wa_tampil"' + (s.wa_tampil === 'ya' ? ' checked' : '') + '> Tampilkan tombol WhatsApp</label>' +
+          '<div class="grid2">' +
+            input('wa_nomor', 'Nomor WhatsApp', { placeholder: '081234567890', attrs: ' inputmode="tel"' }) +
+            input('wa_label', 'Tulisan tombol', { max: 60 }) +
+          '</div>' +
+          input('wa_pesan', 'Pesan otomatis', { max: 300, area: true }) +
+        '</section>' +
+        '<section class="card"><h3>Ikon sosial media</h3><p class="hint">Isi nama pengguna atau alamat lengkap. Yang kosong tidak ditampilkan.</p>' +
+          '<div class="grid2">' +
+            input('instagram', 'Instagram', { placeholder: '@milestoneenglish' }) +
+            input('tiktok', 'TikTok', { placeholder: '@milestoneenglish' }) +
+            input('youtube', 'YouTube', { placeholder: '@milestoneenglish' }) +
+            input('facebook', 'Facebook', { placeholder: 'milestoneenglish' }) +
+            input('email', 'Email', { placeholder: 'halo@milestoneenglish.id', attrs: ' inputmode="email"' }) +
+            input('website', 'Website', { placeholder: 'milestoneenglish.id' }) +
+          '</div>' +
+        '</section>';
+    }
+
+    // ---------------------------------------------------------- Tampilan
+
+    function luminance(hex) {
+      var n = parseInt(hex.slice(1), 16);
+      var c = [n >> 16, (n >> 8) & 255, n & 255].map(function (v) {
+        v /= 255;
+        return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+      });
+      return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+    }
+
+    function contrast(a, b) {
+      var x = luminance(a);
+      var y = luminance(b);
+      return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
+    }
+
+    function contrastWarning() {
+      var s = state.settings;
+      var bad = [
+        ['warna_latar', 'warna_teks', 'Teks di atas latar'],
+        ['warna_tombol', 'warna_teks_tombol', 'Teks tombol'],
+        ['warna_unggulan', 'warna_teks_unggulan', 'Teks tombol unggulan']
+      ].filter(function (p) { return contrast(s[p[0]], s[p[1]]) < 3; }).map(function (p) { return p[2]; });
+      return bad.length ? 'Kurang jelas dibaca: ' + bad.join(', ') + '. Pilih warna yang lebih kontras.' : '';
+    }
+
+    function tampilanPanel() {
+      var s = state.settings;
+      var warn = contrastWarning();
+      return '<div class="panel-head"><div><h2>Tampilan</h2><p class="hint">Pilih tema siap pakai, lalu sesuaikan warnanya bila perlu.</p></div></div>' +
+        '<section class="card"><h3>Tema</h3><div class="presets">' + PRESETS.map(function (p, i) {
+          return '<button class="preset" type="button" data-act="preset" data-i="' + i + '"><span class="swatch" style="background:' + p.c.warna_latar + '"><i style="background:' + p.c.warna_unggulan + '"></i></span>' + p.name + '</button>';
+        }).join('') + '</div></section>' +
+        '<section class="card"><h3>Warna</h3><div class="colors">' + COLORS.map(function (c) {
+          return '<label class="field"><span>' + c[1] + '</span><span class="color"><input type="color" data-s="' + c[0] + '" value="' + esc(s[c[0]]) + '"><code data-hex="' + c[0] + '">' + esc(s[c[0]]) + '</code></span></label>';
+        }).join('') + '</div><div id="contrastWarn" class="warn"' + (warn ? '' : ' hidden') + '>' + esc(warn) + '</div></section>' +
+        '<section class="card"><h3>Bentuk tombol</h3>' + radios('bentuk', [
+          ['bulat', '<i class="shape-sample" style="border-radius:999px"></i>Bulat'],
+          ['lengkung', '<i class="shape-sample" style="border-radius:5px"></i>Lengkung'],
+          ['kotak', '<i class="shape-sample" style="border-radius:1px"></i>Kotak']
+        ]) + '</section>';
+    }
+
+    // ---------------------------------------------------------- Statistik
+
+    function loadStats() {
+      api('adminStats', statsDays).then(function (d) {
+        if (tab === 'statistik') $('panel').innerHTML = statsPanel(d);
+      }).catch(function (err) {
+        if (tab === 'statistik' && err.message !== 'auth') $('panel').innerHTML = '<div class="empty">Statistik gagal dimuat.</div>';
+      });
+    }
+
+    function statsPanel(d) {
+      var max = Math.max.apply(null, [1].concat(d.perLink.map(function (x) { return x.clicks; })));
+      var rate = d.views ? Math.round(d.clicks / d.views * 100) + '%' : '–';
+      var range = '<div class="seg" role="radiogroup" aria-label="Rentang waktu">' + [7, 30, 90].map(function (n) {
+        return '<label><input type="radio" name="days" value="' + n + '" data-act="days"' + (n === d.days ? ' checked' : '') + '><span>' + n + ' hari</span></label>';
+      }).join('') + '</div>';
+      return '<div class="panel-head"><div><h2>Statistik</h2><p class="hint">Kunjungan dan klik dari halaman link, ' + d.days + ' hari terakhir.</p></div></div>' +
+        range +
+        '<div class="tiles" style="margin-top:12px">' +
+          '<div class="tile"><small>Kunjungan</small><strong>' + d.views + '</strong></div>' +
+          '<div class="tile"><small>Klik</small><strong>' + d.clicks + '</strong></div>' +
+          '<div class="tile"><small>Rasio klik</small><strong>' + rate + '</strong></div>' +
+        '</div>' +
+        '<section class="card"><h3>Klik per link</h3>' +
+          (d.perLink.length ? '<table><thead><tr><th>Link</th><th class="bar-cell"></th><th class="num">Klik</th></tr></thead><tbody>' + d.perLink.map(function (x) {
+            return '<tr><td>' + esc(x.title) + (x.exists ? '' : ' <span class="gone">(sudah dihapus)</span>') + '</td>' +
+              '<td class="bar-cell"><div class="bar" style="width:' + (x.clicks / max * 100) + '%" title="' + x.clicks + ' klik"></div></td>' +
+              '<td class="num">' + x.clicks + '</td></tr>';
+          }).join('') + '</tbody></table>' : '<p class="hint">Belum ada data.</p>') +
+        '</section>' +
+        '<section class="card"><details><summary>Per hari</summary><table><thead><tr><th>Tanggal</th><th class="num">Kunjungan</th><th class="num">Klik</th></tr></thead><tbody>' +
+          d.daily.slice().reverse().map(function (x) {
+            return '<tr><td>' + fmtDate(x.date) + '</td><td class="num">' + x.views + '</td><td class="num">' + x.clicks + '</td></tr>';
+          }).join('') + '</tbody></table></details></section>' +
+        monthlyCard(d.monthly || []) +
+        archiveCard(d.archive) +
+        '<p class="hint">Kunjungan dihitung setiap kali halaman dibuka, termasuk saat kamu sendiri membukanya.</p>';
+    }
+
+    function monthlyCard(list) {
+      var thisMonth = list.length ? list[0].month : '';
+      return '<section class="card"><h3>Per bulan</h3><p class="hint">12 bulan terakhir, termasuk data yang sudah diarsip.</p>' +
+        (list.length ? '<table><thead><tr><th>Bulan</th><th class="num">Kunjungan</th><th class="num">Klik</th><th class="num">Rasio</th></tr></thead><tbody>' +
+          list.map(function (m) {
+            var p = m.month.split('-');
+            var label = MONTHS[Number(p[1]) - 1] + ' ' + p[0] + (m.month === thisMonth ? ' <span class="gone">(berjalan)</span>' : '');
+            var top = m.top ? '<small>Teratas: ' + esc(m.top.title) + ' (' + m.top.clicks + ')</small>' : '';
+            return '<tr><td>' + label + top + '</td><td class="num">' + m.views + '</td><td class="num">' + m.clicks + '</td>' +
+              '<td class="num">' + (m.views ? Math.round(m.clicks / m.views * 100) + '%' : '–') + '</td></tr>';
+          }).join('') + '</tbody></table>' : '<p class="hint">Belum ada data.</p>') +
+        '</section>';
+    }
+
+    function archiveCard(a) {
+      if (!a) return '';
+      var day = function (t) { return fmtDate(new Date(t + 7 * 3600000).toISOString().slice(0, 10)); };
+      var text = a.last
+        ? 'Terakhir berjalan ' + day(a.last.time) + ', ' + a.last.moved + ' catatan dipindah. Berikutnya sekitar ' + day(a.next) + '.'
+        : 'Belum aktif. Jalankan fungsi <code>pasangArsip</code> sekali dari editor Apps Script.';
+      return '<section class="card"><h3>Arsip otomatis</h3>' +
+        '<p class="hint">Setiap 90 hari, catatan yang lebih tua dari 90 hari dipindah ke file arsip per tahun supaya Sheet tetap ringan.</p>' +
+        '<p>' + text + '</p>' +
+        (a.files.length ? '<div class="archive-files">' + a.files.map(function (f) {
+          return '<a class="btn btn-ghost" href="' + esc(f.url) + '" target="_blank" rel="noopener">Arsip ' + esc(f.year) + '</a>';
+        }).join('') + '</div>' : '') +
+        '</section>';
+    }
+
+    // ---------------------------------------------------------- Keamanan
+
+    function keamananPanel() {
+      return '<div class="panel-head"><div><h2>Keamanan</h2><p class="hint">Sesi login berlaku 8 jam. Setelah 5 kali PIN salah, login dikunci 15 menit.</p></div></div>' +
+        '<form class="card" id="pinForm" autocomplete="off"><h3>Ganti PIN</h3><p class="hint">Setelah PIN diganti, perangkat lain otomatis keluar.</p>' +
+          '<div class="grid2">' +
+            '<label class="field"><span>PIN lama</span><input id="pinOld" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" required></label>' +
+            '<label class="field"><span>PIN baru</span><input id="pinNew" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" required></label>' +
+          '</div>' +
+          '<div class="row-end"><button class="btn btn-primary" type="submit">Ganti PIN</button></div>' +
+        '</form>' +
+        '<section class="card"><h3>Data cadangan</h3><p class="hint">Semua isi halaman dan catatan klik tersimpan di Google Sheet. Perubahan langsung di Sheet tampil di halaman paling lambat 5 menit.</p>' +
+          (sheetUrl ? '<div class="row-end"><a class="btn btn-ghost" href="' + esc(sheetUrl) + '" target="_blank" rel="noopener">Buka Google Sheet</a></div>' : '') +
+        '</section>';
+    }
+
+    // ---------------------------------------------------------- Peristiwa
+
+    var panel = $('panel');
+
+    panel.addEventListener('input', function (e) {
+      var el = e.target;
+      var card = el.closest('[data-idx]');
+      if (card && el.hasAttribute('data-f') && el.type !== 'checkbox' && el.tagName !== 'SELECT' && el.type !== 'date') {
+        var f = el.getAttribute('data-f');
+        state.links[Number(card.getAttribute('data-idx'))][f] = el.value;
+        var show = card.querySelector('[data-show="' + f + '"]');
+        if (show) show.textContent = el.value || (f === 'judul' ? '(tanpa judul)' : '');
+        changed();
+        return;
+      }
+      var key = el.getAttribute('data-s');
+      if (!key || el.type === 'checkbox' || el.type === 'radio') return;
+      state.settings[key] = el.value;
+      var count = panel.querySelector('[data-count="' + key + '"]');
+      if (count) count.textContent = el.value.length + '/' + el.getAttribute('maxlength');
+      var hex = panel.querySelector('[data-hex="' + key + '"]');
+      if (hex) hex.textContent = el.value;
+      if (el.type === 'color') {
+        var warn = contrastWarning();
+        $('contrastWarn').hidden = !warn;
+        $('contrastWarn').textContent = warn;
+      }
+      changed();
+    });
+
+    panel.addEventListener('change', function (e) {
+      var el = e.target;
+      if (el.id === 'logoFile') { if (el.files[0]) uploadLogo(el.files[0]); return; }
+      if (el.getAttribute('data-act') === 'days') { statsDays = Number(el.value); render(); return; }
+      var card = el.closest('[data-idx]');
+      if (card && el.hasAttribute('data-f')) {
+        var link = state.links[Number(card.getAttribute('data-idx'))];
+        var f = el.getAttribute('data-f');
+        if (el.type === 'checkbox') link[f] = el.checked;
+        else if (el.type === 'date' || el.tagName === 'SELECT') link[f] = el.value;
+        else return;
+        render();
+        return;
+      }
+      var key = el.getAttribute('data-s');
+      if (!key) return;
+      if (el.type === 'checkbox') state.settings[key] = el.checked ? 'ya' : 'tidak';
+      else if (el.type === 'radio') { state.settings[key] = el.value; if (key === 'logo_bentuk') { render(); return; } }
+      else return;
+      changed();
+    });
+
+    panel.addEventListener('click', function (e) {
+      var btn = e.target.closest('[data-act]');
+      if (!btn || btn.tagName === 'INPUT') return;
+      var act = btn.getAttribute('data-act');
+      var card = btn.closest('[data-idx]');
+      var i = card ? Number(card.getAttribute('data-idx')) : -1;
+      var links = state.links;
+      if (act === 'add') {
+        var l = { id: newId(), judul: 'Link baru', keterangan: '', url: '', ikon: 'link', unggulan: false, aktif: true, mulai: '', sampai: '' };
+        links.push(l);
+        openIds[l.id] = true;
+        render();
+        var cards = panel.querySelectorAll('[data-idx]');
+        var last = cards[cards.length - 1];
+        last.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        last.querySelector('[data-f="judul"]').select();
+      } else if (act === 'open') {
+        openIds[links[i].id] = !openIds[links[i].id];
+        render();
+      } else if (act === 'up' || act === 'down') {
+        var j = act === 'up' ? i - 1 : i + 1;
+        var tmp = links[i]; links[i] = links[j]; links[j] = tmp;
+        render();
+        var moved = panel.querySelector('[data-idx="' + j + '"] [data-act="' + act + '"]');
+        if (moved && !moved.disabled) moved.focus();
+      } else if (act === 'delete') {
+        if (!btn.classList.contains('is-confirm')) {
+          btn.classList.add('is-confirm');
+          btn.textContent = 'Klik lagi untuk menghapus';
+          clearTimeout(confirmTimer);
+          confirmTimer = setTimeout(function () { btn.classList.remove('is-confirm'); btn.textContent = 'Hapus link'; }, 4000);
+          return;
+        }
+        links.splice(i, 1);
+        render();
+        toast('Link dihapus. Klik Simpan untuk menerapkan, atau Batalkan.');
+      } else if (act === 'preset') {
+        var p = PRESETS[Number(btn.getAttribute('data-i'))];
+        Object.keys(p.c).forEach(function (k) { state.settings[k] = p.c[k]; });
+        render();
+      } else if (act === 'logo-remove') {
+        state.settings.logo = '';
+        render();
+      } else if (act === 'logo-default') {
+        state.settings.logo = defaults.logo;
+        render();
+      }
+    });
+
+    panel.addEventListener('submit', function (e) {
+      if (e.target.id !== 'pinForm') return;
+      e.preventDefault();
+      var oldPin = $('pinOld').value;
+      var newPin = $('pinNew').value;
+      if (!/^\d{4}$/.test(newPin)) { toast('PIN baru harus 4 angka.', true); return; }
+      api('changePin', oldPin, newPin).then(function () {
+        $('pinOld').value = '';
+        $('pinNew').value = '';
+        toast('PIN sudah diganti.');
+      }).catch(function () {});
+    });
+
+    // ---------------------------------------------------------- Logo
+
+    function uploadLogo(file) {
+      if (!/^image\/(png|jpeg|webp)$/.test(file.type)) { toast('Pilih gambar PNG, JPG, atau WebP.', true); return; }
+      var reader = new FileReader();
+      reader.onload = function () {
+        var img = new Image();
+        img.onload = function () {
+          var url = shrink(img);
+          if (!url) { toast('Gambar terlalu besar. Coba gambar lain.', true); return; }
+          state.settings.logo = url;
+          render();
+        };
+        img.onerror = function () { toast('Gambar tidak bisa dibaca.', true); };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // Perkecil sampai muat di satu sel Google Sheet (batas 50.000 karakter).
+    function shrink(img) {
+      var sizes = [360, 280, 220, 160, 120];
+      for (var i = 0; i < sizes.length; i++) {
+        var scale = Math.min(1, sizes[i] / Math.max(img.naturalWidth, img.naturalHeight));
+        var canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(img.naturalWidth * scale));
+        canvas.height = Math.max(1, Math.round(img.naturalHeight * scale));
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        var types = ['image/webp', 'image/png'];
+        for (var k = 0; k < types.length; k++) {
+          var out = canvas.toDataURL(types[k], 0.9);
+          if (out.indexOf('data:' + types[k]) === 0 && out.length < 48000) return out;
+        }
+      }
+      return '';
+    }
+
+    // ---------------------------------------------------------- Mulai
+
+    if (token) loadAll(); else showLogin();
+  </script>
+</body>
+</html>

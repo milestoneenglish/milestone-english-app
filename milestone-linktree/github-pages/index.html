@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Milestone English</title>
+  <meta name="description" content="Link resmi Milestone English: placement test, daftar kelas, program, dan kontak admin.">
+  <meta property="og:title" content="Milestone English">
+  <meta property="og:description" content="Link resmi Milestone English: placement test, daftar kelas, program, dan kontak admin.">
+  <meta name="theme-color" content="#0b1426">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <style>
+    html, body { margin: 0; padding: 0; background: #0b1426; }
+    .boot { min-height: 100vh; display: grid; place-items: center; text-align: center; padding: 24px; box-sizing: border-box;
+      color: #fff; font: 15px/1.5 Inter, system-ui, sans-serif; }
+    .boot a { display: inline-block; margin-top: 12px; padding: 12px 22px; border-radius: 999px; background: #f17a16; color: #152949;
+      font-weight: 700; text-decoration: none; }
+    .spin { width: 28px; height: 28px; margin: 0 auto 12px; border-radius: 50%; border: 3px solid rgba(255,255,255,.2);
+      border-top-color: #f17a16; animation: spin .8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div id="app"><div class="boot"><div><div class="spin"></div>Memuat…</div></div></div>
+  <script>
+    // Halaman ini mengambil data dari Apps Script tanpa cookie Google, jadi tidak terkena
+    // error "tidak dapat membuka file" di browser yang sedang login ke akun Google.
+    var EXEC = 'https://script.google.com/macros/s/AKfycbwvRykwyL5kQKwxDPfFREO3lai6T_20Qkfu-ibEuhm_5S3g5r-BKO2uibBqJFi0dwQ-wQ/exec';
+    var CACHE = 'mlt_page_v1';
+    var app = document.getElementById('app');
+    var shown = '';
+    var renderShown = '';
+    var styleEl = null;
+
+    function send(query) {
+      try {
+        fetch(EXEC + query, { method: 'POST', mode: 'no-cors', credentials: 'omit', keepalive: true, body: '' }).catch(function () {});
+      } catch (err) {}
+    }
+
+    function loadRender(render) {
+      if (render === renderShown) return;
+      var box = document.createElement('div');
+      box.innerHTML = render;
+      var style = box.querySelector('style');
+      if (style) {
+        if (styleEl) styleEl.remove();
+        styleEl = document.createElement('style');
+        styleEl.textContent = style.textContent;
+        document.head.appendChild(styleEl);
+      }
+      Array.prototype.forEach.call(box.querySelectorAll('script'), function (old) {
+        var s = document.createElement('script');
+        s.text = old.textContent;
+        document.head.appendChild(s);
+      });
+      renderShown = render;
+    }
+
+    function show(json) {
+      if (json === shown) return true;
+      try {
+        var data = JSON.parse(json);
+        loadRender(data.render);
+        var page = data.page;
+        document.body.style.background = page.settings.warna_latar || '#0b1426';
+        document.title = page.settings.nama || 'Milestone English';
+        renderLinktree(app, page, { onGo: function (item) { send('?klik=' + encodeURIComponent(item.id)); } });
+        shown = json;
+        return true;
+      } catch (err) {
+        return false;
+      }
+    }
+
+    // Tampilkan versi terakhir yang tersimpan dulu supaya langsung muncul, lalu perbarui.
+    try { var saved = localStorage.getItem(CACHE); if (saved) show(saved); } catch (err) {}
+
+    fetch(EXEC + '?api', { credentials: 'omit', cache: 'no-store' })
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); })
+      .then(function (json) {
+        if (!show(json)) throw new Error('data');
+        try { localStorage.setItem(CACHE, json); } catch (err) {}
+      })
+      .catch(function () {
+        if (shown) return;
+        app.innerHTML = '<div class="boot"><div>Halaman belum bisa dimuat.<br><a href="' + EXEC + '">Buka halaman</a></div></div>';
+      });
+
+    send('?lihat');
+  </script>
+</body>
+</html>

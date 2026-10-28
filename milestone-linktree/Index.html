@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <style>html, body { margin: 0; padding: 0; background: #0b1426; }</style>
+  <?!= include('Render'); ?>
+</head>
+<body>
+  <div id="app"></div>
+  <script>
+    var PAGE = <?!= json ?>;
+    document.body.style.background = PAGE.settings.warna_latar || '#0b1426';
+    renderLinktree(document.getElementById('app'), PAGE, { onGo: track });
+
+    // Catat klik tanpa menahan pengunjung: sendBeacon tetap terkirim walau halaman sudah berpindah.
+    function track(item) {
+      try {
+        if (PAGE.execUrl && navigator.sendBeacon && navigator.sendBeacon(PAGE.execUrl + '?klik=' + encodeURIComponent(item.id), new Blob([''], { type: 'text/plain' }))) return;
+      } catch (err) {}
+      try { google.script.run.logClick(item.id); } catch (err) {}
+    }
+
+    setTimeout(function () {
+      try { google.script.run.logView(); } catch (err) {}
+    }, 400);
+  </script>
+</body>
+</html>
